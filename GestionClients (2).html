@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Clients & Tournées</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3250;--accent:#4f7cff;--accent2:#7c3aed;--green:#22c55e;--orange:#f97316;--red:#ef4444;--yellow:#eab308;--text:#e8eaf0;--text2:#8b90aa;--text3:#5a5f7a;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  header{background:linear-gradient(135deg,#1a1d27,#22263a);border-bottom:1px solid var(--border);padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .logo-text{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+  .logo-sub{font-size:11px;color:var(--text2);}
+  .header-stats{display:flex;gap:16px;flex-wrap:wrap;}
+  .stat-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;}
+  .stat-pill span{color:var(--accent);font-family:'DM Mono',monospace;font-weight:600;}
+  .app{display:grid;grid-template-columns:440px 1fr;height:calc(100vh - 64px);}
+  .panel{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+  .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 6px;overflow-x:auto;}
+  .tab{padding:12px 10px;font-size:12px;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-content{flex:1;overflow-y:auto;padding:16px;display:none;}
+  .tab-content.active{display:block;}
+  .section-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:0 0 12px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;}
+  input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .2s,box-shadow .2s;outline:none;width:100%;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,124,255,.15);}
+  select option{background:var(--surface2);}
+  textarea{resize:vertical;min-height:60px;}
+  .btn{padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;width:100%;justify-content:center;box-shadow:0 4px 16px rgba(79,124,255,.3);}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-sm{padding:4px 10px;font-size:12px;border-radius:6px;}
+  .btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+  .btn-danger:hover{background:rgba(239,68,68,.25);}
+  .btn-edit{background:rgba(79,124,255,.1);color:#7ba8ff;border:1px solid rgba(79,124,255,.3);}
+  .btn-go{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
+  .btn-success{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+  .country-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+  .ctry-btn{flex:1;padding:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--surface2);color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .2s;}
+  .ctry-btn.active{background:var(--accent);color:#fff;}
+  .search-box{position:relative;margin-bottom:12px;}
+  .search-box input{padding-left:34px;}
+  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none;}
+  .filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .filter-chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;}
+  .filter-chip:hover,.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .client-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+  .client-card:hover{border-color:var(--accent);transform:translateX(2px);}
+  .client-card.selected{border-color:var(--accent);background:rgba(79,124,255,.08);}
+  .client-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .client-name{font-size:14px;font-weight:600;}
+  .client-tags{display:flex;gap:5px;flex-wrap:wrap;}
+  .tag{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
+  .tag-presta{background:rgba(34,197,94,.15);color:#6ee7b7;}
+  .client-address{font-size:12px;color:var(--text2);margin-top:4px;}
+  .client-meta{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;}
+  .meta-item{font-size:11px;color:var(--text3);}
+  .client-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .zones-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .zones-table th{background:var(--surface2);color:var(--text2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border:1px solid var(--border);text-align:left;}
+  .zones-table td{padding:8px 10px;border:1px solid var(--border);vertical-align:middle;}
+  .zones-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+  .zones-table td.num{font-family:'DM Mono',monospace;font-weight:600;text-align:right;}
+  .settings-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;}
+  .settings-card h3{font-size:13px;font-weight:700;margin-bottom:12px;}
+  .item-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .item-row{display:flex;align-items:center;gap:8px;}
+  .item-row span.item-label{flex:1;font-size:13px;background:var(--bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  .color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .add-item-row{display:flex;gap:8px;}
+  .add-item-row input{flex:1;}
+  #map{width:100%;height:100%;}
+  .map-wrapper{position:relative;flex:1;}
+  .map-legend{position:absolute;bottom:24px;right:16px;z-index:500;background:rgba(26,29,39,.92);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;min-width:150px;}
+  .map-legend h4{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;font-weight:500;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:8px;box-shadow:var(--shadow);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.success{border-color:rgba(34,197,94,.4);}
+  .toast.error{border-color:rgba(239,68,68,.4);}
+  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+  .empty{text-align:center;padding:40px 20px;color:var(--text3);}
+  .empty-icon{font-size:40px;margin-bottom:12px;}
+  .geocoding{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);padding:8px 12px;background:rgba(79,124,255,.1);border-radius:8px;margin-bottom:12px;}
+  .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .count-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;}
+  hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏢</div>
+    <div><div class="logo-text">GestionPro</div><div class="logo-sub">Clients &amp; Tournées</div></div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-pill">👥 <span id="stat-total">0</span> clients</div>
+    <div class="stat-pill">💵 CA : <span id="stat-ca">0 $</span></div>
+    <div class="stat-pill">📍 <span id="stat-zones">0</span> zones</div>
+  </div>
+</header>
+<div class="app">
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab active"  onclick="switchTab('add')">➕ Ajouter</button>
+      <button class="tab"         onclick="switchTab('list')">📋 Clients <span class="count-badge" id="list-count">0</span></button>
+      <button class="tab"         onclick="switchTab('zones')">🗺️ Zones</button>
+      <button class="tab"         onclick="switchTab('settings')">⚙️ Paramètres</button>
+    </div>
+
+    <!-- TAB AJOUTER -->
+    <div class="tab-content active" id="tab-add">
+      <div id="geocoding-status" style="display:none" class="geocoding"><div class="spinner"></div> Géolocalisation en cours…</div>
+      <p class="section-title">Pays</p>
+      <div class="country-toggle">
+        <button class="ctry-btn active" onclick="setCountry('FR',this)">🇫🇷 France</button>
+        <button class="ctry-btn"        onclick="setCountry('QC',this)">🍁 Québec / Canada</button>
+      </div>
+      <p class="section-title">Informations client</p>
+      <div class="form-grid">
+        <div class="form-group full"><label>Nom du client *</label><input type="text" id="f-nom" placeholder="Ex : Martin Tremblay"></div>
+        <div class="form-group full"><label>Adresse *</label><input type="text" id="f-adresse" placeholder="Ex : 123 Rue Principale"></div>
+        <div class="form-group"><label>Code postal *</label><input type="text" id="f-cp" placeholder="G1A 0A1" maxlength="7"></div>
+        <div class="form-group"><label>Ville *</label><input type="text" id="f-ville" placeholder="Québec"></div>
+        <div class="form-group" id="grp-province" style="display:none">
+          <label>Province</label>
+          <select id="f-province">
+            <option value="QC">Québec</option><option value="ON">Ontario</option>
+            <option value="BC">Colombie-Britannique</option><option value="AB">Alberta</option>
+            <option value="NS">Nouvelle-Écosse</option><option value="NB">Nouveau-Brunswick</option>
+            <option value="MB">Manitoba</option><option value="SK">Saskatchewan</option>
+            <option value="NL">Terre-Neuve</option><option value="PE">Î.-P.-É.</option>
+          </select>
+        </div>
+        <div class="form-group" id="grp-secteur">
+          <label>Secteur / Zone</label>
+          <select id="f-secteur"><option value="">— Choisir —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Type de prestation</label>
+          <select id="f-presta"><option value="">— Choisir —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Fréquence</label>
+          <select id="f-freq">
+            <option value="">— Choisir —</option><option>Quotidien</option>
+            <option>Hebdomadaire</option><option>Bimensuel</option><option>Mensuel</option><option>Ponctuel</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tarif ($)</label><input type="number" id="f-tarif" placeholder="85" min="0"></div>
+        <div class="form-group"><label>Téléphone</label><input type="text" id="f-tel" placeholder="514 000-0000"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="f-email" placeholder="client@mail.com"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Code porte, chien, horaires préférés…"></textarea></div>
+      </div>
+      <button class="btn btn-primary" id="btn-submit" onclick="addClient()">📍 Ajouter &amp; placer sur la carte</button>
+    </div>
+
+    <!-- TAB LISTE -->
+    <div class="tab-content" id="tab-list">
+      <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Rechercher un client…" oninput="renderList()"></div>
+      <div class="filter-row" id="filter-row"></div>
+      <div id="client-list"></div>
+    </div>
+
+    <!-- TAB ZONES -->
+    <div class="tab-content" id="tab-zones">
+      <p class="section-title">Grille tarifaire par prestation &amp; secteur</p>
+      <div id="zones-summary"></div>
+    </div>
+
+    <!-- TAB PARAMÈTRES -->
+    <div class="tab-content" id="tab-settings">
+      <div class="settings-card">
+        <h3>🗺️ Secteurs / Zones</h3>
+        <div class="item-list" id="sect-list"></div>
+        <div class="add-item-row">
+          <input type="text" id="new-sect-name" placeholder="Nom du secteur">
+          <input type="color" id="new-sect-color" value="#4f7cff" style="width:44px;padding:4px 6px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2);">
+          <button class="btn btn-success btn-sm" onclick="addSecteur()">＋</button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <h3>🔧 Types de prestation &amp; tarifs par secteur</h3>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Pour chaque prestation, définissez le prix ($) dans chaque secteur.</p>
+        <div class="item-list" id="presta-list"></div>
+        <div class="add-item-row">
+          <input type="text" id="new-presta-name" placeholder="Nouvelle prestation">
+          <button class="btn btn-success btn-sm" onclick="addPrestation()">＋ Ajouter</button>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="settings-card" style="border-color:rgba(239,68,68,.3);">
+        <h3 style="color:var(--red);">⚠️ Zone danger</h3>
+        <button class="btn btn-danger btn-sm" onclick="resetAll()" style="width:100%;justify-content:center;">🗑 Réinitialiser toutes les données</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="map-legend">
+      <h4>Secteurs</h4>
+      <div id="legend-items"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var clients     = JSON.parse(localStorage.getItem('gc_clients')  || '[]');
+var secteurs    = JSON.parse(localStorage.getItem('gc_secteurs') || 'null') || [{name:'Centre',color:'#4f7cff'},{name:'Nord',color:'#ef4444'},{name:'Sud',color:'#22c55e'},{name:'Est',color:'#f97316'},{name:'Ouest',color:'#eab308'},{name:'Périphérie',color:'#8b5cf6'}];
+var prestations = JSON.parse(localStorage.getItem('gc_prestas')  || 'null') || ['Nettoyage','Jardinage','Repassage','Multi-services','Aide à domicile','Garde enfants','Autre'];
+// tarifs: clé "Prestation||Secteur" -> prix ($)
+var tarifs = JSON.parse(localStorage.getItem('gc_tarifs') || '{}');
+var markers = {};
+var activeFilter = '';
+var editingId = null;
+var currentCountry = 'FR';
+
+function tarifKey(p,s){return p+'||'+s;}
+function getTarif(p,s){var v=tarifs[tarifKey(p,s)];return(v!==undefined&&v!=='')? v:'';}
+function setTarif(p,s,val){var k=tarifKey(p,s);if(val===''||val===null||val===undefined||isNaN(parseFloat(val))){delete tarifs[k];}else{tarifs[k]=parseFloat(val);}save();}
+function save(){
+  localStorage.setItem('gc_clients',JSON.stringify(clients));
+  localStorage.setItem('gc_secteurs',JSON.stringify(secteurs));
+  localStorage.setItem('gc_prestas',JSON.stringify(prestations));
+  localStorage.setItem('gc_tarifs',JSON.stringify(tarifs));
+}
+function getSectColor(n){var s=secteurs.find(function(x){return x.name===n;});return s?s.color:'#6b7280';}
+
+var map=L.map('map',{zoomControl:true}).setView([46.5,-72.5],5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
+
+function makeIcon(color){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="28" height="36"><filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".4"/></filter><path filter="url(#sh)" fill="'+color+'" stroke="rgba(255,255,255,.5)" stroke-width="1.5" d="M16 2C9.4 2 4 7.4 4 14c0 9 12 26 12 26S28 23 28 14C28 7.4 22.6 2 16 2z"/><circle cx="16" cy="14" r="5" fill="white" fill-opacity=".9"/></svg>';
+  return L.divIcon({html:svg,className:'',iconSize:[28,36],iconAnchor:[14,36],popupAnchor:[0,-36]});
+}
+
+function popupHtml(c){
+  var loc=c.country==='QC'?(c.province||'QC')+', Canada':'France';
+  return '<div style="font-family:DM Sans,sans-serif;min-width:200px;"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+c.nom+'</div><div style="font-size:12px;color:#555;margin-bottom:4px;">📍 '+c.adresse+', '+c.cp+' '+c.ville+' — '+loc+'</div>'+(c.presta?'<div style="font-size:12px;margin-bottom:2px;">🔧 '+c.presta+'</div>':'')+(c.freq?'<div style="font-size:12px;margin-bottom:2px;">🔄 '+c.freq+'</div>':'')+(c.tarif?'<div style="font-size:12px;margin-bottom:2px;">💵 '+c.tarif+' $</div>':'')+(c.tel?'<div style="font-size:12px;margin-bottom:2px;">📞 '+c.tel+'</div>':'')+(c.notes?'<div style="font-size:11px;color:#777;margin-top:6px;border-top:1px solid #eee;padding-top:6px;">'+c.notes+'</div>':'')+'</div>';
+}
+
+function addMarker(c){
+  if(!c.lat||!c.lng)return;
+  var color=getSectColor(c.secteur);
+  var m=L.marker([c.lat,c.lng],{icon:makeIcon(color)}).bindPopup(popupHtml(c)).addTo(map);
+  m.on('click',function(){selectClient(c.id);});
+  markers[c.id]=m;
+}
+
+function refreshMarker(c){if(markers[c.id]){map.removeLayer(markers[c.id]);delete markers[c.id];}addMarker(c);}
+
+async function geocode(a,cp,v,country,prov){
+  var q=country==='QC'?encodeURIComponent(a+', '+v+', '+(prov||'QC')+', Canada'):encodeURIComponent(a+', '+cp+' '+v+', France');
+  try{var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1',{headers:{'Accept-Language':'fr'}});var d=await r.json();if(d.length>0)return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};}catch(e){}
+  return null;
+}
+
+function setCountry(code,btn){
+  currentCountry=code;
+  document.querySelectorAll('.ctry-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var isQC=code==='QC';
+  document.getElementById('grp-province').style.display=isQC?'flex':'none';
+  document.getElementById('f-cp').placeholder=isQC?'G1A 0A1':'75001';
+  document.getElementById('f-ville').placeholder=isQC?'Québec':'Paris';
+  document.getElementById('f-tel').placeholder=isQC?'514 000-0000':'06 00 00 00 00';
+}
+
+async function addClient(){
+  var nom=document.getElementById('f-nom').value.trim();
+  var adresse=document.getElementById('f-adresse').value.trim();
+  var cp=document.getElementById('f-cp').value.trim();
+  var ville=document.getElementById('f-ville').value.trim();
+  if(!nom||!adresse||!cp||!ville){showToast('⚠️ Veuillez remplir les champs obligatoires *','error');return;}
+  document.getElementById('geocoding-status').style.display='flex';
+  var province=document.getElementById('f-province').value;
+  var coords=await geocode(adresse,cp,ville,currentCountry,province);
+  document.getElementById('geocoding-status').style.display='none';
+  var client={
+    id:editingId||Date.now().toString(),nom:nom,adresse:adresse,cp:cp,ville:ville,
+    country:currentCountry,province:currentCountry==='QC'?province:'',
+    secteur:document.getElementById('f-secteur').value,
+    presta:document.getElementById('f-presta').value,
+    freq:document.getElementById('f-freq').value,
+    tarif:parseFloat(document.getElementById('f-tarif').value)||0,
+    tel:document.getElementById('f-tel').value.trim(),
+    email:document.getElementById('f-email').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    lat:coords?coords.lat:null,lng:coords?coords.lng:null
+  };
+  if(editingId){
+    var idx=clients.findIndex(function(c){return c.id===editingId;});
+    if(idx!==-1)clients[idx]=client;
+    if(markers[editingId]){map.removeLayer(markers[editingId]);delete markers[editingId];}
+    editingId=null;
+    document.getElementById('btn-submit').textContent='📍 Ajouter & placer sur la carte';
+  }else{clients.push(client);}
+  save();
+  if(coords){addMarker(client);map.flyTo([coords.lat,coords.lng],14,{duration:1});}
+  else showToast('⚠️ Adresse non trouvée sur la carte, client ajouté sans position','error');
+  resetForm();renderAll();
+  if(coords)showToast('✅ '+nom+' ajouté sur la carte !','success');
+}
+
+function renderList(){
+  var search=(document.getElementById('search-input').value||'').toLowerCase();
+  var list=document.getElementById('client-list');
+  var filtered=clients.filter(function(c){
+    return(!activeFilter||c.secteur===activeFilter)&&(c.nom.toLowerCase().includes(search)||c.adresse.toLowerCase().includes(search)||c.ville.toLowerCase().includes(search));
+  });
+  document.getElementById('list-count').textContent=clients.length;
+  if(filtered.length===0){list.innerHTML='<div class="empty"><div class="empty-icon">👥</div><p>Aucun client trouvé</p></div>';return;}
+  list.innerHTML=filtered.map(function(c){
+    var color=getSectColor(c.secteur);
+    var flag=c.country==='QC'?'🍁':'🇫🇷';
+    return '<div class="client-card" id="card-'+c.id+'" onclick="selectClient(\''+c.id+'\')">'
+      +'<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:'+color+';border-radius:3px 0 0 3px;"></div>'
+      +'<div class="client-card-header"><div class="client-name">'+flag+' '+c.nom+'</div>'
+      +'<div class="client-tags">'
+      +(c.secteur?'<span class="tag" style="background:'+color+'22;color:'+color+'">'+c.secteur+'</span>':'')
+      +(c.presta?'<span class="tag tag-presta">'+c.presta+'</span>':'')
+      +'</div></div>'
+      +'<div class="client-address">📍 '+c.adresse+', '+c.cp+' '+c.ville+(c.province?', '+c.province:'')+'</div>'
+      +'<div class="client-meta">'
+      +(c.freq?'<span class="meta-item">🔄 '+c.freq+'</span>':'')
+      +(c.tarif?'<span class="meta-item">💵 '+c.tarif+' $</span>':'')
+      +(c.tel?'<span class="meta-item">📞 '+c.tel+'</span>':'')
+      +'</div>'
+      +'<div class="client-actions">'
+      +'<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteClient(\''+c.id+'\')">🗑</button>'
+      +'<button class="btn btn-sm btn-edit"   onclick="event.stopPropagation();editClient(\''+c.id+'\')">✏️ Modifier</button>'
+      +(c.lat?'<button class="btn btn-sm btn-go" onclick="event.stopPropagation();flyTo(\''+c.id+'\')">🗺️ Voir</button>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function selectClient(id){document.querySelectorAll('.client-card').forEach(function(c){c.classList.remove('selected');});var card=document.getElementById('card-'+id);if(card)card.classList.add('selected');flyTo(id);}
+function flyTo(id){var c=clients.find(function(x){return x.id===id;});if(c&&c.lat){map.flyTo([c.lat,c.lng],16,{duration:1});if(markers[id])markers[id].openPopup();}}
+
+function editClient(id){
+  var c=clients.find(function(x){return x.id===id;});if(!c)return;
+  currentCountry=c.country||'FR';
+  document.querySelectorAll('.ctry-btn').forEach(function(b,i){b.classList.toggle('active',(i===0&&currentCountry==='FR')||(i===1&&currentCountry==='QC'));});
+  document.getElementById('grp-province').style.display=currentCountry==='QC'?'flex':'none';
+  document.getElementById('f-nom').value=c.nom;document.getElementById('f-adresse').value=c.adresse;
+  document.getElementById('f-cp').value=c.cp;document.getElementById('f-ville').value=c.ville;
+  document.getElementById('f-province').value=c.province||'QC';
+  document.getElementById('f-secteur').value=c.secteur;document.getElementById('f-presta').value=c.presta;
+  document.getElementById('f-freq').value=c.freq;document.getElementById('f-tarif').value=c.tarif;
+  document.getElementById('f-tel').value=c.tel;document.getElementById('f-email').value=c.email;
+  document.getElementById('f-notes').value=c.notes;
+  editingId=id;document.getElementById('btn-submit').textContent='💾 Enregistrer les modifications';
+  switchTab('add');
+}
+
+function deleteClient(id){
+  if(!confirm('Supprimer ce client ?'))return;
+  clients=clients.filter(function(c){return c.id!==id;});
+  if(markers[id]){map.removeLayer(markers[id]);delete markers[id];}
+  save();renderAll();showToast('🗑 Client supprimé','error');
+}
+
+function renderZones(){
+  var el=document.getElementById('zones-summary');
+  if(prestations.length===0||secteurs.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🗺️</div><p>Ajoutez des secteurs et des prestations dans les paramètres.</p></div>';return;
+  }
+  // Table: rows = prestations, cols = secteurs
+  var html='<div style="overflow-x:auto;">'
+    +'<p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Prix définis dans ⚙️ Paramètres — modifiables directement dans le tableau ci-dessous.</p>'
+    +'<table class="zones-table"><thead><tr>'
+    +'<th style="min-width:130px;">Prestation</th>'
+    +secteurs.map(function(s){
+      return '<th style="text-align:center;min-width:90px;"><span style="display:flex;align-items:center;justify-content:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:'+s.color+';display:inline-block;"></span>'+s.name+'</span></th>';
+    }).join('')
+    +'</tr></thead><tbody>';
+
+  prestations.forEach(function(p){
+    html+='<tr><td><strong style="font-size:12px;">'+p+'</strong></td>';
+    secteurs.forEach(function(s){
+      var val=getTarif(p,s.name);
+      var display=val!==''?val+' $':'—';
+      var color=getSectColor(s.name);
+      html+='<td style="text-align:center;cursor:pointer;" '
+        +'onclick="openTarifEditor(\''+p.replace(/'/g,"\\'")+"','"+s.name.replace(/'/g,"\\'")+'\',this)" '
+        +'title="Cliquer pour modifier">'
+        +'<span style="font-family:\'DM Mono\',monospace;font-weight:600;font-size:13px;color:'+(val!==''?color:'var(--text3)')+';">'+display+'</span>'
+        +'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>'
+    +'<p style="font-size:11px;color:var(--text3);margin-top:10px;">💡 Cliquez sur une cellule pour saisir ou modifier le prix de cette prestation dans ce secteur.</p>';
+  el.innerHTML=html;
+}
+
+function openTarifEditor(presta,sect,cell){
+  // Replace cell content with inline input
+  var current=getTarif(presta,sect);
+  var color=getSectColor(sect);
+  cell.innerHTML='<input type="number" min="0" step="0.01" value="'+(current!==''?current:'')+'" '
+    +'placeholder="0" '
+    +'style="width:80px;text-align:center;font-family:DM Mono,monospace;font-size:12px;padding:4px 6px;border:1px solid '+color+';border-radius:6px;background:var(--bg);color:var(--text);outline:none;" '
+    +'onblur="commitTarif(\''+presta.replace(/'/g,"\\'")+"','"+sect.replace(/'/g,"\\'")+'\',this)" '
+    +'onkeydown="if(event.key===\'Enter\'||event.key===\'Escape\')this.blur()" '
+    +'autofocus />';
+  var inp=cell.querySelector('input');
+  inp.focus();inp.select();
+}
+
+function commitTarif(presta,sect,inp){
+  var val=inp.value.trim();
+  setTarif(presta,sect,val);
+  renderZones();
+  showToast('💾 Tarif enregistré : '+presta+' / '+sect+(val!==''?' = '+parseFloat(val).toFixed(2)+' $':' effacé'),'success');
+}
+
+function renderSettings(){
+  var sl=document.getElementById('sect-list');
+  sl.innerHTML=secteurs.map(function(s,i){
+    return '<div class="item-row"><span class="item-label"><span class="color-dot" style="background:'+s.color+'"></span>'+s.name+'</span>'
+      +'<input type="color" value="'+s.color+'" onchange="updateSectColor('+i+',this.value)" style="width:30px;height:28px;padding:2px 3px;cursor:pointer;border:1px solid var(--border);border-radius:5px;background:var(--surface2);">'
+      +'<button class="btn btn-sm btn-danger" onclick="deleteSecteur('+i+')">✕</button></div>';
+  }).join('');
+
+  // Prestations list with per-sector price inputs
+  var pl=document.getElementById('presta-list');
+  pl.innerHTML=prestations.map(function(p,i){
+    var priceInputs=secteurs.map(function(s){
+      var val=getTarif(p,s.name);
+      var color=getSectColor(s.name);
+      return '<div style="display:flex;flex-direction:column;gap:3px;align-items:center;min-width:72px;">'
+        +'<span style="font-size:9px;font-weight:700;color:'+color+';letter-spacing:.4px;text-transform:uppercase;">'+s.name+'</span>'
+        +'<div style="position:relative;">'
+        +'<input type="number" min="0" step="0.01" value="'+(val!==''?val:'')+'" placeholder="—" '
+        +'data-p="'+p.replace(/"/g,'&quot;')+'" data-s="'+s.name.replace(/"/g,'&quot;')+'" '
+        +'onchange="setTarif(this.dataset.p,this.dataset.s,this.value);renderZones();" '
+        +'style="width:68px;text-align:center;font-family:DM Mono,monospace;font-size:11px;padding:5px 4px 5px 4px;border:1px solid '+(val!==''?color:'var(--border)')+';border-radius:6px;background:var(--bg);color:'+(val!==''?color:'var(--text2)')+';" />'
+        +'<span style="position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text3);pointer-events:none;">$</span>'
+        +'</div></div>';
+    }).join('');
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+      +'<span style="font-size:13px;font-weight:600;">'+p+'</span>'
+      +'<button class="btn btn-sm btn-danger" onclick="deletePrestation('+i+')">✕ Supprimer</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'+priceInputs+'</div>'
+      +'</div>';
+  }).join('');
+
+  populateSelects();renderFilterChips();renderLegend();
+  clients.forEach(function(c){refreshMarker(c);});
+}
+
+function addSecteur(){
+  var name=document.getElementById('new-sect-name').value.trim();
+  var color=document.getElementById('new-sect-color').value;
+  if(!name){showToast('⚠️ Entrez un nom de secteur','error');return;}
+  if(secteurs.find(function(s){return s.name.toLowerCase()===name.toLowerCase();})){showToast('Ce secteur existe déjà','error');return;}
+  secteurs.push({name:name,color:color});
+  document.getElementById('new-sect-name').value='';
+  save();renderSettings();showToast('✅ Secteur "'+name+'" ajouté','success');
+}
+
+function deleteSecteur(i){
+  var name=secteurs[i].name;
+  if(clients.find(function(c){return c.secteur===name;})){if(!confirm('Des clients sont dans ce secteur. Supprimer quand même ?'))return;}
+  secteurs.splice(i,1);save();renderSettings();renderZones();showToast('🗑 Secteur supprimé','error');
+}
+
+function updateSectColor(i,color){secteurs[i].color=color;save();renderSettings();renderZones();}
+
+function addPrestation(){
+  var name=document.getElementById('new-presta-name').value.trim();
+  if(!name){showToast('⚠️ Entrez un nom de prestation','error');return;}
+  if(prestations.includes(name)){showToast('Cette prestation existe déjà','error');return;}
+  prestations.push(name);document.getElementById('new-presta-name').value='';
+  save();renderSettings();showToast('✅ Prestation "'+name+'" ajoutée','success');
+}
+
+function deletePrestation(i){
+  if(clients.find(function(c){return c.presta===prestations[i];})){if(!confirm('Des clients ont cette prestation. Supprimer quand même ?'))return;}
+  prestations.splice(i,1);save();renderSettings();renderZones();
+}
+
+function populateSelects(){
+  var sf=document.getElementById('f-secteur');var pf=document.getElementById('f-presta');
+  sf.innerHTML='<option value="">— Choisir —</option>'+secteurs.map(function(s){return'<option value="'+s.name+'">'+s.name+'</option>';}).join('');
+  pf.innerHTML='<option value="">— Choisir —</option>'+prestations.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+}
+
+function renderFilterChips(){
+  var row=document.getElementById('filter-row');
+  row.innerHTML='<div class="filter-chip '+(activeFilter?'':'active')+'" onclick="setFilter(this,\'\')">Tous</div>'
+    +secteurs.map(function(s){return'<div class="filter-chip '+(activeFilter===s.name?'active':'')+'" onclick="setFilter(this,\''+s.name+'\')">'+s.name+'</div>';}).join('');
+}
+
+function renderLegend(){
+  document.getElementById('legend-items').innerHTML=secteurs.map(function(s){
+    return'<div class="legend-item"><div class="legend-dot" style="background:'+s.color+'"></div>'+s.name+'</div>';
+  }).join('')+'<div class="legend-item"><div class="legend-dot" style="background:#6b7280"></div>Non défini</div>';
+}
+
+function updateStats(){
+  document.getElementById('stat-total').textContent=clients.length;
+  var ca=clients.reduce(function(s,c){return s+(c.tarif||0);},0);
+  document.getElementById('stat-ca').textContent=ca.toFixed(0)+' $';
+  var zones=new Set(clients.map(function(c){return c.secteur;}).filter(Boolean));
+  document.getElementById('stat-zones').textContent=zones.size;
+}
+
+function renderAll(){renderList();renderZones();updateStats();}
+
+function resetForm(){
+  ['f-nom','f-adresse','f-cp','f-ville','f-tarif','f-tel','f-email','f-notes'].forEach(function(id){document.getElementById(id).value='';});
+  ['f-secteur','f-presta','f-freq'].forEach(function(id){document.getElementById(id).value='';});
+}
+
+function switchTab(tab){
+  var tabs=['add','list','zones','settings'];
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',tabs[i]===tab);});
+  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='settings')renderSettings();
+  if(tab==='zones')renderZones();
+}
+
+function setFilter(el,val){
+  activeFilter=val;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');renderList();
+}
+
+function showToast(msg,type){
+  var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'success')+' show';
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+function resetAll(){
+  if(!confirm('Supprimer TOUTES les données clients ? Cette action est irréversible.'))return;
+  clients=[];Object.keys(markers).forEach(function(id){map.removeLayer(markers[id]);});markers={};
+  save();renderAll();showToast('🗑 Données réinitialisées','error');
+}
+
+function init(){
+  if(clients.length===0){
+    clients=[
+      {id:'1',nom:'Martin Tremblay',  adresse:'1250 Boul. René-Lévesque O',cp:'H3B 4W8',ville:'Montréal',  country:'QC',province:'QC',secteur:'Centre',  presta:'Nettoyage',    freq:'Hebdomadaire',tarif:95, tel:'514 111-2222',email:'martin.t@mail.com', notes:'Code : 4567',         lat:45.4991,lng:-73.5679},
+      {id:'2',nom:'Julie Bouchard',   adresse:'745 Rue Saint-Jean',        cp:'G1R 1P4',ville:'Québec',    country:'QC',province:'QC',secteur:'Centre',  presta:'Repassage',    freq:'Bimensuel',   tarif:70, tel:'418 222-3333',email:'julie.b@gmail.com', notes:'',                    lat:46.8139,lng:-71.2082},
+      {id:'3',nom:'Sophie Laurent',   adresse:'45 Avenue du Prado',        cp:'13008',  ville:'Marseille', country:'FR',province:'',  secteur:'Sud',      presta:'Jardinage',    freq:'Mensuel',     tarif:120,tel:'06 22 33 44 55',email:'sophie.l@mail.fr',notes:'Portail électrique',  lat:43.2714,lng:5.3825},
+      {id:'4',nom:'André Petit',      adresse:'56 Avenue de la Rose',      cp:'13013',  ville:'Marseille', country:'FR',province:'',  secteur:'Nord',     presta:'Multi-services',freq:'Mensuel',    tarif:200,tel:'07 77 88 99 00',email:'andre.p@free.fr', notes:'Chien dans le jardin',lat:43.3350,lng:5.3600},
+      {id:'5',nom:'Luc Gagnon',       adresse:'3500 Rue de la Montagne',   cp:'H3G 2A8',ville:'Montréal',  country:'QC',province:'QC',secteur:'Sud',      presta:'Jardinage',    freq:'Hebdomadaire',tarif:110,tel:'514 333-4444',email:'luc.g@mail.com',   notes:'Grand terrain',       lat:45.4926,lng:-73.5806},
+      {id:'6',nom:'Nathalie Roux',    adresse:'9 Impasse des Pins',        cp:'13012',  ville:'Marseille', country:'FR',province:'',  secteur:'Est',      presta:'Jardinage',    freq:'Bimensuel',   tarif:85, tel:'06 88 99 00 11',email:'n.roux@mail.fr',  notes:'',                    lat:43.2980,lng:5.4200},
+    ];
+    save();
+  }
+  populateSelects();renderFilterChips();renderLegend();
+  clients.forEach(function(c){addMarker(c);});
+  renderList();renderZones();updateStats();
+}
+init();
+</script>
+</body>
+</html>
