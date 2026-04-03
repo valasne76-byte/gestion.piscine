@@ -2,106 +2,156 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PoolPro — Gestion Clients Piscines</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PoolPro">
+<meta name="theme-color" content="#07090f">
+<title>PoolPro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#07090f;--surface:#0f1420;--surface2:#161c2e;--surface3:#1e2640;--border:#252e4a;--accent:#00b4d8;--accent2:#0077b6;--green:#22c55e;--orange:#f97316;--red:#ef4444;--yellow:#fbbf24;--pool:#0096c7;--text:#e2e8f0;--text2:#7c8db0;--text3:#3d4f6b;--radius:12px;--shadow:0 4px 32px rgba(0,0,0,.6);}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-header{background:linear-gradient(135deg,#0a0f1e,#0f1a2e);border-bottom:1px solid var(--border);padding:0 16px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;}
-.logo-text{font-size:15px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(90deg,var(--accent),#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.logo-sub{font-size:10px;color:var(--text2);}
-.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.stat-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px;}
+:root{
+  --bg:#07090f;--surface:#0f1420;--surface2:#161c2e;--surface3:#1e2640;
+  --border:#252e4a;--accent:#00b4d8;--accent2:#0077b6;--green:#22c55e;
+  --orange:#f97316;--red:#ef4444;--yellow:#fbbf24;--pool:#0096c7;
+  --text:#e2e8f0;--text2:#7c8db0;--text3:#3d4f6b;
+  --radius:12px;--shadow:0 4px 32px rgba(0,0,0,.6);
+  --sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+
+/* ── HEADER ── */
+header{
+  background:linear-gradient(135deg,#0a0f1e,#0f1a2e);
+  border-bottom:1px solid var(--border);
+  padding:0 14px;
+  padding-top:max(0px,var(--sat));
+  height:calc(58px + max(0px,var(--sat)));
+  display:flex;align-items:flex-end;padding-bottom:8px;
+  justify-content:space-between;position:sticky;top:0;z-index:200;
+}
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text{font-size:15px;font-weight:800;background:linear-gradient(90deg,var(--accent),#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:9px;color:var(--text2);}
+.hstats{display:flex;align-items:center;gap:8px;}
+.stat-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px;white-space:nowrap;}
 .stat-pill span{color:var(--accent);font-family:'DM Mono',monospace;font-weight:700;}
-.stat-pill.urgent span{color:var(--red);}
-.btn-export{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;}
-.btn-export:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(22,163,74,.4);}
-.app{display:grid;grid-template-columns:450px 1fr;height:calc(100vh - 60px);}
+.stat-pill.urg span{color:var(--red);}
+.btn-xls{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn-map-mob{display:none;background:rgba(0,180,216,.15);color:var(--accent);border:1px solid rgba(0,180,216,.3);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* ── SYNC BAR ── */
+#sync-bar{
+  background:rgba(0,180,216,.08);border-bottom:1px solid rgba(0,180,216,.2);
+  padding:6px 14px;display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--text2);
+}
+#sync-bar.ok{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);}
+#sync-bar.err{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.err{background:var(--red);}
+.sync-dot.loading{background:var(--yellow);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+#sync-code-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;width:90px;outline:none;}
+#sync-code-input:focus{border-color:var(--accent);}
+
+/* ── LAYOUT ── */
+.app{
+  display:grid;grid-template-columns:440px 1fr;
+  height:calc(100vh - 58px - max(0px,var(--sat)));
+}
 .panel{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TABS ── */
 .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 4px;overflow-x:auto;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
-.tab{padding:10px 9px;font-size:11px;font-weight:700;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .2s;}
+.tab{padding:9px 8px;font-size:11px;font-weight:700;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .2s;}
 .tab:hover{color:var(--text);}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.tab-content{flex:1;overflow-y:auto;padding:13px;display:none;}
+.tab-content{flex:1;overflow-y:auto;padding:12px;display:none;}
 .tab-content.active{display:block;}
-.section-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:14px 0 7px;display:flex;align-items:center;gap:5px;}
+
+/* ── FORMS ── */
+.section-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:13px 0 7px;}
 .section-title:first-child{margin-top:0;}
-hr.sep{border:none;border-top:1px solid var(--border);margin:12px 0;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:3px;}
+hr.sep{border:none;border-top:1px solid var(--border);margin:11px 0;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:3px;}
 .form-group{display:flex;flex-direction:column;gap:4px;}
 .form-group.full{grid-column:1/-1;}
 label{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;}
 input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .2s,box-shadow .2s;outline:none;width:100%;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,180,216,.1);}
 select option{background:var(--surface2);}
-textarea{resize:vertical;min-height:52px;}
-.btn{padding:8px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
+textarea{resize:vertical;min-height:50px;}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;width:100%;justify-content:center;box-shadow:0 4px 14px rgba(0,180,216,.22);}
 .btn-primary:hover{transform:translateY(-1px);}
 .btn-sm{padding:4px 9px;font-size:11px;border-radius:6px;}
 .btn-danger{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);}
-.btn-danger:hover{background:rgba(239,68,68,.2);}
 .btn-edit{background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.25);}
 .btn-go{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25);}
 .btn-success{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
 .btn-orange{background:rgba(249,115,22,.12);color:var(--orange);border:1px solid rgba(249,115,22,.25);}
-.country-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:11px;}
-.ctry-btn{flex:1;padding:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--surface2);color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .2s;}
-.ctry-btn.active{background:var(--accent);color:#fff;}
-.status-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;gap:3px;}
-.status-ouverte{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
-.status-fermee{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
-.status-attente{background:rgba(251,191,36,.15);color:var(--yellow);border:1px solid rgba(251,191,36,.3);}
-.status-probleme{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
-.search-box{position:relative;margin-bottom:9px;}
+.btn-check{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);font-weight:700;}
+.btn-check.done{background:rgba(34,197,94,.25);box-shadow:0 0 0 2px rgba(34,197,94,.4);}
+
+/* ── STATUS ── */
+.status-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;display:inline-flex;align-items:center;gap:3px;}
+.s-ouverte{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
+.s-fermee{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
+.s-attente{background:rgba(251,191,36,.15);color:var(--yellow);border:1px solid rgba(251,191,36,.3);}
+.s-probleme{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+
+/* ── SEASON CHECK ── */
+.season-done{border-left-color:var(--green)!important;opacity:1;}
+.season-done .client-name::after{content:'✅';margin-left:6px;font-size:12px;}
+.season-todo{opacity:.75;}
+
+/* ── SEARCH / FILTER ── */
+.search-box{position:relative;margin-bottom:8px;}
 .search-box input{padding-left:30px;}
-.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;}
-.filter-row{display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap;}
-.filter-chip{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;}
+.sicon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none;}
+.filter-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+.filter-bar select{flex:1;min-width:100px;font-size:11px;padding:5px 8px;}
+.filter-chip{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;}
 .filter-chip:hover,.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-.client-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.sort-row{display:flex;gap:5px;margin-bottom:8px;align-items:center;}
+.sort-row label{font-size:10px;color:var(--text3);white-space:nowrap;}
+.sort-row select{flex:1;font-size:11px;padding:4px 7px;}
+
+/* ── CLIENT CARDS ── */
+.client-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid transparent;border-radius:var(--radius);padding:10px 11px;margin-bottom:6px;cursor:pointer;transition:all .2s;position:relative;}
 .client-card:hover{border-color:var(--accent);transform:translateX(2px);}
 .client-card.selected{border-color:var(--accent);background:rgba(0,180,216,.05);}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
 .client-name{font-size:13px;font-weight:700;}
-.card-tags{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
-.tag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
-.client-address{font-size:11px;color:var(--text2);margin:2px 0;}
-.card-meta{display:flex;gap:9px;margin-top:4px;flex-wrap:wrap;}
-.meta-item{font-size:11px;color:var(--text3);}
-.card-pool{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
+.card-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.tag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;}
+.card-address{font-size:11px;color:var(--text2);margin:2px 0;}
+.card-pool{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;}
 .pool-chip{font-size:10px;color:var(--pool);background:rgba(0,150,199,.1);border:1px solid rgba(0,150,199,.2);border-radius:4px;padding:2px 6px;font-weight:600;}
+.svc-chip{font-size:10px;color:var(--accent);background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.2);border-radius:4px;padding:2px 6px;font-weight:600;}
+.card-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;}
+.meta-item{font-size:11px;color:var(--text3);}
 .next-visit{font-size:11px;background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:2px 7px;display:inline-flex;align-items:center;gap:3px;margin-top:4px;}
 .next-visit.overdue{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2);}
-.card-actions{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;padding:14px;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
-.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1;}
-.modal-header h2{font-size:15px;font-weight:700;}
-.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;padding:2px 6px;border-radius:6px;}
-.modal-close:hover{background:var(--surface2);}
-.modal-body{padding:14px 18px;}
-.modal-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;}
-.intervention-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px;}
-.intervention-card{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;}
-.int-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:4px;}
-.int-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);}
-.int-type{font-size:11px;font-weight:700;color:var(--accent);}
-.int-price{font-size:12px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace;}
-.int-notes{font-size:12px;color:var(--text2);margin-top:2px;}
+.card-actions{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap;}
+
+/* ── ZONES TABLE ── */
 .zones-table{width:100%;border-collapse:collapse;font-size:12px;}
-.zones-table th{background:var(--surface2);color:var(--text2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 9px;border:1px solid var(--border);text-align:left;}
+.zones-table th{background:var(--surface2);color:var(--text2);font-size:10px;font-weight:700;text-transform:uppercase;padding:7px 9px;border:1px solid var(--border);}
 .zones-table td{padding:7px 9px;border:1px solid var(--border);vertical-align:middle;}
 .zones-table tr:nth-child(even) td{background:rgba(255,255,255,.015);}
+
+/* ── SETTINGS ── */
 .settings-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:11px;}
 .settings-card h3{font-size:12px;font-weight:700;margin-bottom:9px;}
 .item-list{display:flex;flex-direction:column;gap:5px;margin-bottom:9px;}
@@ -110,38 +160,90 @@ textarea{resize:vertical;min-height:52px;}
 .color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 .add-item-row{display:flex;gap:6px;}
 .add-item-row input{flex:1;}
+
+/* ── MAP ── */
 #map{width:100%;height:100%;}
 .map-wrapper{position:relative;flex:1;}
-.map-legend{position:absolute;bottom:18px;right:12px;z-index:500;background:rgba(7,9,15,.92);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;min-width:130px;}
+.map-legend{position:absolute;bottom:18px;right:12px;z-index:500;background:rgba(7,9,15,.9);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;min-width:130px;}
 .map-legend h4{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
 .legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px;}
 .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:600;align-items:center;justify-content:center;padding:12px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
+.modal-header{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1;}
+.modal-header h2{font-size:15px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;padding:2px 6px;border-radius:6px;}
+.modal-body{padding:13px 17px;}
+.modal-footer{padding:10px 17px;border-top:1px solid var(--border);display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+
+/* ── INTERVENTIONS ── */
+.intervention-card{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:6px;}
+.int-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:3px;}
+.int-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);}
+.int-type{font-size:11px;font-weight:700;color:var(--accent);}
+.int-price{font-size:12px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);max-width:90vw;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.success{border-color:rgba(34,197,94,.4);}
 .toast.error{border-color:rgba(239,68,68,.4);}
+
+/* ── MISC ── */
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
-.empty{text-align:center;padding:32px 14px;color:var(--text3);}
-.empty-icon{font-size:34px;margin-bottom:9px;}
+.empty{text-align:center;padding:30px 14px;color:var(--text3);}
+.empty-icon{font-size:32px;margin-bottom:8px;}
 .geocoding{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);padding:7px 10px;background:rgba(0,180,216,.07);border-radius:8px;margin-bottom:9px;}
 .spinner{width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .count-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:3px;}
+.season-year-badge{background:rgba(251,191,36,.15);color:var(--yellow);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .app{grid-template-columns:1fr!important;}
+  .map-wrapper{display:none!important;}
+  .map-wrapper.show{display:block!important;position:fixed;inset:0;z-index:400;}
+  .map-close-btn{display:flex!important;}
+  .btn-map-mob{display:flex!important;}
+  .hstats .stat-pill:not(:first-child){display:none;}
+  .form-grid{grid-template-columns:1fr!important;}
+}
+.map-close-btn{display:none;position:absolute;top:14px;left:14px;z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;align-items:center;gap:5px;}
 </style>
 </head>
 <body>
+
 <header>
   <div class="logo">
     <div class="logo-icon">🏊</div>
-    <div><div class="logo-text">PoolPro</div><div class="logo-sub">Gestion Clients Piscines</div></div>
+    <div><div class="logo-text">PoolPro</div><div class="logo-sub">Gestion Piscines QC</div></div>
   </div>
-  <div class="header-right">
+  <div class="hstats">
     <div class="stat-pill">🏊 <span id="stat-total">0</span></div>
-    <div class="stat-pill">💵 <span id="stat-ca">0 $</span>/mois</div>
-    <div class="stat-pill urgent">⚠️ <span id="stat-urgent">0</span> urgent</div>
-    <button class="btn-export" onclick="exportExcel()">📥 Excel</button>
+    <div class="stat-pill">💵 <span id="stat-ca">0$</span></div>
+    <div class="stat-pill urg">⚠️ <span id="stat-urgent">0</span></div>
+    <button class="btn-xls" onclick="exportExcel()">📥 Excel</button>
+    <button class="btn-map-mob" onclick="toggleMap()">🗺️</button>
   </div>
 </header>
+
+<!-- SYNC BAR -->
+<div id="sync-bar">
+  <div style="display:flex;align-items:center;gap:7px;">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-status">Entrez un code de synchronisation pour partager vos données</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;">
+    <input id="sync-code-input" placeholder="Code synchro" maxlength="20" onkeydown="if(event.key==='Enter')connectSync()">
+    <button class="btn-sm btn-edit btn" onclick="connectSync()" style="padding:3px 8px;font-size:10px;">Connecter</button>
+    <button class="btn-sm btn" onclick="genCode()" style="padding:3px 8px;font-size:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">Nouveau</button>
+  </div>
+</div>
+
 <div class="app">
   <div class="panel">
     <div class="tabs">
@@ -151,49 +253,52 @@ textarea{resize:vertical;min-height:52px;}
       <button class="tab" onclick="switchTab('settings')">⚙️ Config</button>
     </div>
 
-    <!-- ADD TAB -->
+    <!-- ══ ADD TAB ══ -->
     <div class="tab-content active" id="tab-add">
-      <div id="geocoding-status" style="display:none" class="geocoding"><div class="spinner"></div> Géolocalisation…</div>
-      <div class="section-title">🌍 Pays</div>
-      <div class="country-toggle">
-        <button class="ctry-btn" onclick="setCountry('FR',this)">🇫🇷 France</button>
-        <button class="ctry-btn" onclick="setCountry('QC',this)">🍁 Québec / Canada</button>
-      </div>
+      <div id="geo-status" style="display:none" class="geocoding"><div class="spinner"></div> Géolocalisation Québec…</div>
+
       <div class="section-title">👤 Client</div>
       <div class="form-grid">
         <div class="form-group full"><label>Nom *</label><input type="text" id="f-nom" placeholder="Martin Tremblay"></div>
         <div class="form-group full"><label>Adresse *</label><input type="text" id="f-adresse" placeholder="123 Rue des Érables"></div>
         <div class="form-group"><label>Code postal *</label><input type="text" id="f-cp" placeholder="G1A 0A1" maxlength="7"></div>
         <div class="form-group"><label>Ville *</label><input type="text" id="f-ville" placeholder="Québec"></div>
-        <div class="form-group" id="grp-province" style="display:none"><label>Province</label>
-          <select id="f-province"><option value="QC">Québec</option><option value="ON">Ontario</option><option value="BC">C.-B.</option><option value="AB">Alberta</option><option value="NS">N.-Écosse</option><option value="NB">N.-Brunswick</option><option value="MB">Manitoba</option><option value="SK">Saskatchewan</option></select>
-        </div>
         <div class="form-group"><label>Téléphone</label><input type="text" id="f-tel" placeholder="514 000-0000"></div>
         <div class="form-group"><label>Email</label><input type="email" id="f-email" placeholder="client@mail.com"></div>
         <div class="form-group"><label>Secteur</label><select id="f-secteur"><option value="">— Choisir —</option></select></div>
         <div class="form-group"><label>Statut piscine</label>
-          <select id="f-statut"><option value="Ouverte">🟢 Ouverte</option><option value="Fermée">⚫ Fermée</option><option value="En attente">🟡 En attente</option><option value="Problème">🔴 Problème</option></select>
+          <select id="f-statut">
+            <option value="Ouverte">🟢 Ouverte</option>
+            <option value="Fermée">⚫ Fermée</option>
+            <option value="En attente">🟡 En attente</option>
+            <option value="Problème">🔴 Problème</option>
+          </select>
         </div>
       </div>
+
       <hr class="sep">
       <div class="section-title">🏊 Piscine</div>
       <div class="form-grid">
         <div class="form-group"><label>Type</label>
-          <select id="f-type-piscine"><option value="">— Choisir —</option><option>Creusée — Vinyle</option><option>Creusée — Béton</option><option>Creusée — Fibre</option><option>Hors-sol</option><option>Semi-enterrée</option><option>Spa / Bain tourbillon</option></select>
+          <select id="f-type-piscine">
+            <option value="">— Choisir —</option>
+            <option>Creusée — Vinyle</option><option>Creusée — Béton</option>
+            <option>Creusée — Fibre</option><option>Hors-sol</option>
+            <option>Semi-enterrée</option><option>Spa / Bain tourbillon</option>
+          </select>
         </div>
-        <div class="form-group"><label>Volume (gallons)</label><input type="number" id="f-volume" placeholder="15000" min="0"></div>
+        <div class="form-group"><label>Volume (gal)</label><input type="number" id="f-volume" placeholder="15000" min="0"></div>
         <div class="form-group"><label>Dimensions (pi)</label><input type="text" id="f-dimensions" placeholder="16x32"></div>
-        <div class="form-group"><label>Année installation</label><input type="number" id="f-annee" placeholder="2018" min="1970" max="2030"></div>
-        <div class="form-group full"><label>Équipements</label><input type="text" id="f-equipements" placeholder="Pompe Hayward, Filtre sable, Chauffage, Robot..."></div>
-        <div class="form-group full"><label>Notes piscine</label><textarea id="f-notes-piscine" placeholder="Chimie difficile, fuite connue, accès particulier..."></textarea></div>
+        <div class="form-group"><label>Année installation</label><input type="number" id="f-annee" placeholder="2018" min="1970" max="2035"></div>
+        <div class="form-group full"><label>Équipements</label><input type="text" id="f-equipements" placeholder="Pompe Hayward, Filtre sable, Chauffage…"></div>
+        <div class="form-group full"><label>Notes piscine</label><textarea id="f-notes-piscine" placeholder="Chimie difficile, fuite connue, accès particulier…"></textarea></div>
       </div>
+
       <hr class="sep">
       <div class="section-title">📋 Services actifs</div>
-      <!-- Services list -->
-      <div id="f-services-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
-      <!-- Add service row -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">➕ Ajouter un service</div>
+      <div id="f-services-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:9px;"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px;margin-bottom:9px;">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;">➕ Ajouter un service</div>
         <div class="form-grid">
           <div class="form-group"><label>Service</label><select id="f-new-presta"><option value="">— Choisir —</option></select></div>
           <div class="form-group"><label>Fréquence</label>
@@ -202,34 +307,66 @@ textarea{resize:vertical;min-height:52px;}
           <div class="form-group"><label>Tarif ($)</label><input type="number" id="f-new-tarif" placeholder="150" min="0"></div>
           <div class="form-group"><label>Prochaine visite</label><input type="date" id="f-new-visite"></div>
         </div>
-        <button class="btn btn-success btn-sm" onclick="addServiceToForm()" style="width:100%;justify-content:center;margin-top:2px;">＋ Ajouter ce service</button>
+        <button class="btn btn-success btn-sm" onclick="addServiceToForm()" style="width:100%;justify-content:center;margin-top:3px;">＋ Ajouter ce service</button>
       </div>
-      <div id="f-services-total" style="display:none;background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.2);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--accent);text-align:right;"></div>
-      <div class="form-group full" style="margin-bottom:10px;"><label>Notes internes</label><textarea id="f-notes" placeholder="Code porte, chien, horaires préférés..."></textarea></div>
+      <div id="f-services-total" style="display:none;background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.2);border-radius:8px;padding:7px 12px;margin-bottom:9px;font-size:13px;font-weight:700;color:var(--accent);text-align:right;"></div>
+      <div class="form-group full" style="margin-bottom:9px;"><label>Notes internes</label><textarea id="f-notes" placeholder="Code porte, chien, horaires…"></textarea></div>
       <button class="btn btn-primary" id="btn-submit" onclick="addClient()">📍 Ajouter & placer sur la carte</button>
     </div>
 
-    <!-- LIST TAB -->
+    <!-- ══ LIST TAB ══ -->
     <div class="tab-content" id="tab-list">
-      <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Rechercher..." oninput="renderList()"></div>
-      <div class="filter-row" id="filter-row"></div>
+      <!-- Season picker -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--text2);">Saison : <strong id="cur-season-label" style="color:var(--yellow);">2025</strong></div>
+        <div style="display:flex;gap:5px;">
+          <button class="btn-sm btn" onclick="changeSeason(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);">◀</button>
+          <button class="btn-sm btn" onclick="changeSeason(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);">▶</button>
+          <button class="btn-sm btn btn-success" onclick="changeSeason(0)">Aujourd'hui</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;" id="season-progress"></div>
+
+      <div class="search-box"><span class="sicon">🔍</span><input type="text" id="search-input" placeholder="Rechercher…" oninput="renderList()"></div>
+
+      <!-- Multi-filter bar -->
+      <div class="filter-bar">
+        <select id="fil-secteur" onchange="renderList()" style="flex:1;min-width:90px;"><option value="">Tous secteurs</option></select>
+        <select id="fil-statut" onchange="renderList()"><option value="">Tous statuts</option><option>Ouverte</option><option>Fermée</option><option>En attente</option><option>Problème</option></select>
+      </div>
+      <div class="filter-bar">
+        <select id="fil-type" onchange="renderList()" style="flex:1;"><option value="">Tous types piscine</option><option>Creusée — Vinyle</option><option>Creusée — Béton</option><option>Creusée — Fibre</option><option>Hors-sol</option><option>Semi-enterrée</option><option>Spa / Bain tourbillon</option></select>
+        <select id="fil-presta" onchange="renderList()" style="flex:1;"><option value="">Tous services</option></select>
+      </div>
+      <div class="filter-bar">
+        <select id="fil-saison" onchange="renderList()"><option value="">Tous</option><option value="done">✅ Faits cette saison</option><option value="todo">⏳ Pas encore faits</option></select>
+        <select id="fil-sort" onchange="renderList()">
+          <option value="nom">Trier : Nom</option>
+          <option value="secteur">Trier : Secteur</option>
+          <option value="type">Trier : Type piscine</option>
+          <option value="visite">Trier : Prochaine visite</option>
+          <option value="tarif">Trier : Tarif ↓</option>
+          <option value="presta">Trier : Service</option>
+          <option value="saison">Trier : Saison (faits en premier)</option>
+        </select>
+      </div>
       <div id="client-list"></div>
     </div>
 
-    <!-- ZONES TAB -->
+    <!-- ══ ZONES TAB ══ -->
     <div class="tab-content" id="tab-zones">
-      <p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">💲 Grille tarifaire</p>
+      <p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:9px;">💲 Grille tarifaire — cliquez pour modifier</p>
       <div id="zones-summary"></div>
     </div>
 
-    <!-- SETTINGS TAB -->
+    <!-- ══ SETTINGS TAB ══ -->
     <div class="tab-content" id="tab-settings">
       <div class="settings-card">
         <h3>🗺️ Secteurs / Zones</h3>
         <div class="item-list" id="sect-list"></div>
         <div class="add-item-row">
           <input type="text" id="new-sect-name" placeholder="Nouveau secteur">
-          <input type="color" id="new-sect-color" value="#00b4d8" style="width:38px;padding:2px 4px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2);">
+          <input type="color" id="new-sect-color" value="#00b4d8" style="width:36px;padding:2px 4px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2);">
           <button class="btn btn-success btn-sm" onclick="addSecteur()">＋</button>
         </div>
       </div>
@@ -250,7 +387,9 @@ textarea{resize:vertical;min-height:52px;}
     </div>
   </div>
 
-  <div class="map-wrapper">
+  <!-- MAP -->
+  <div class="map-wrapper" id="map-wrapper">
+    <button class="map-close-btn" onclick="toggleMap()">✕ Fermer</button>
     <div id="map"></div>
     <div class="map-legend"><h4>Secteurs</h4><div id="legend-items"></div></div>
   </div>
@@ -263,157 +402,273 @@ textarea{resize:vertical;min-height:52px;}
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
       <button class="btn btn-sm btn-edit" onclick="editFromModal()">✏️ Modifier</button>
-      <button class="btn btn-sm btn-orange" onclick="openInterventionForm()">➕ Intervention</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteFromModal()">🗑 Supprimer</button>
+      <button class="btn btn-sm btn-orange" onclick="openIntForm()">➕ Intervention</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteFromModal()">🗑</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL INTERVENTION -->
-<div class="modal-overlay" id="modal-intervention">
+<div class="modal-overlay" id="modal-int">
   <div class="modal" style="max-width:400px;">
-    <div class="modal-header"><h2>📋 Nouvelle intervention</h2><button class="modal-close" onclick="closeInterventionModal()">✕</button></div>
+    <div class="modal-header"><h2>📋 Nouvelle intervention</h2><button class="modal-close" onclick="closeIntModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>Date *</label><input type="date" id="int-date"></div>
         <div class="form-group"><label>Service *</label><select id="int-type"><option value="">— Choisir —</option></select></div>
         <div class="form-group"><label>Technicien</label><input type="text" id="int-tech" placeholder="Nom"></div>
         <div class="form-group"><label>Prix ($)</label><input type="number" id="int-prix" placeholder="0" min="0"></div>
-        <div class="form-group full"><label>Notes / Observations</label><textarea id="int-notes" placeholder="pH ajusté, filtre nettoyé, pièce changée..."></textarea></div>
-        <div class="form-group full"><label>Prochaine visite</label><input type="date" id="int-prochaine"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="int-notes" placeholder="pH ajusté, filtre nettoyé…"></textarea></div>
+        <div class="form-group full"><label>Prochaine visite planifiée</label><input type="date" id="int-prochaine"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-sm" onclick="closeInterventionModal()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);">Annuler</button>
-      <button class="btn btn-sm btn-primary" onclick="saveIntervention()" style="width:auto;">💾 Enregistrer</button>
+      <button class="btn btn-sm" onclick="closeIntModal()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);">Annuler</button>
+      <button class="btn btn-sm btn-primary" onclick="saveInt()" style="width:auto;">💾 Enregistrer</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<script>
-var clients=JSON.parse(localStorage.getItem('pp_clients')||'[]');
-var secteurs=JSON.parse(localStorage.getItem('pp_secteurs')||'null')||[{name:'Centre',color:'#00b4d8'},{name:'Nord',color:'#ef4444'},{name:'Sud',color:'#22c55e'},{name:'Est',color:'#f97316'},{name:'Ouest',color:'#eab308'},{name:'Périphérie',color:'#8b5cf6'}];
-var prestations=JSON.parse(localStorage.getItem('pp_prestas')||'null')||['Entretien régulier','Ouverture saisonnière','Fermeture saisonnière','Réparations & dépannage','Changement de toile','Changement de sable'];
-var tarifs=JSON.parse(localStorage.getItem('pp_tarifs')||'{}');
-var markers={};var activeFilter='';var editingId=null;var currentCountry='QC';var modalClientId=null;
-var formServices=[]; // [{presta, freq, tarif, prochaineVisite}]
-function tk(p,s){return p+'||'+s;}
-function gt(p,s){var v=tarifs[tk(p,s)];return(v!==undefined&&v!=='')? v:'';}
-function st(p,s,val){var k=tk(p,s);if(val===''||isNaN(parseFloat(val))){delete tarifs[k];}else{tarifs[k]=parseFloat(val);}save();}
-function save(){localStorage.setItem('pp_clients',JSON.stringify(clients));localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));localStorage.setItem('pp_prestas',JSON.stringify(prestations));localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));}
-function gsc(n){var s=secteurs.find(function(x){return x.name===n;});return s?s.color:'#6b7280';}
 
-// ── Multi-service form helpers ──
-function renderFormServices(){
-  var el=document.getElementById('f-services-list');
-  var tot=document.getElementById('f-services-total');
-  if(!formServices.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0;">Aucun service ajouté — utilisez le formulaire ci-dessous.</div>';
-    tot.style.display='none';return;
-  }
-  el.innerHTML=formServices.map(function(s,i){
-    return '<div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
-      +'<div style="flex:1;min-width:120px;">'
-      +'<div style="font-size:13px;font-weight:700;">🔧 '+s.presta+'</div>'
-      +(s.freq?'<div style="font-size:11px;color:var(--text2);">🔄 '+s.freq+'</div>':'')
-      +(s.prochaineVisite?'<div style="font-size:11px;color:var(--yellow);">📅 '+s.prochaineVisite+'</div>':'')
-      +'</div>'
-      +'<div style="font-family:DM Mono,monospace;font-size:14px;font-weight:700;color:var(--green);">'+s.tarif+' $</div>'
-      +'<button class="btn btn-sm btn-danger" onclick="removeFormService('+i+')">✕</button>'
-      +'</div>';
-  }).join('');
-  var total=formServices.reduce(function(s,x){return s+(x.tarif||0);},0);
-  tot.style.display='block';
-  tot.textContent='Total mensuel : '+total.toFixed(2)+' $';
-}
-function addServiceToForm(){
-  var presta=document.getElementById('f-new-presta').value;
-  var freq=document.getElementById('f-new-freq').value;
-  var tarif=parseFloat(document.getElementById('f-new-tarif').value)||0;
-  var visite=document.getElementById('f-new-visite').value;
-  if(!presta){showToast('⚠️ Choisissez un service','error');return;}
-  formServices.push({presta:presta,freq:freq,tarif:tarif,prochaineVisite:visite});
-  document.getElementById('f-new-presta').value='';
-  document.getElementById('f-new-freq').value='';
-  document.getElementById('f-new-tarif').value='';
-  document.getElementById('f-new-visite').value='';
-  renderFormServices();
-  showToast('✅ Service ajouté','success');
-}
-function removeFormService(i){formServices.splice(i,1);renderFormServices();}
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════
+var clients     = JSON.parse(localStorage.getItem('pp_clients')  || '[]');
+var secteurs    = JSON.parse(localStorage.getItem('pp_secteurs') || 'null') || [{name:'Centre',color:'#00b4d8'},{name:'Nord',color:'#ef4444'},{name:'Sud',color:'#22c55e'},{name:'Est',color:'#f97316'},{name:'Ouest',color:'#eab308'},{name:'Périphérie',color:'#8b5cf6'}];
+var prestations = JSON.parse(localStorage.getItem('pp_prestas')  || 'null') || ['Entretien régulier','Ouverture saisonnière','Fermeture saisonnière','Réparations & dépannage','Changement de toile','Changement de sable'];
+var tarifs      = JSON.parse(localStorage.getItem('pp_tarifs')   || '{}');
+
+var markers={}, activeFilter='', editingId=null, modalClientId=null;
+var formServices=[];
+var currentSeason = new Date().getFullYear();
+var syncCode = localStorage.getItem('pp_sync_code') || '';
+var syncInterval = null;
+var lastSyncHash = '';
+
+function tk(p,s){return p+'||'+s;}
+function gt(p,s){var v=tarifs[tk(p,s)];return v!==undefined&&v!==''?v:'';}
+function st(p,s,val){var k=tk(p,s);if(val===''||isNaN(parseFloat(val))){delete tarifs[k];}else{tarifs[k]=parseFloat(val);}save();}
+function gsc(n){var s=secteurs.find(function(x){return x.name===n;});return s?s.color:'#6b7280';}
 function clientTotalTarif(c){return(c.services||[]).reduce(function(s,x){return s+(x.tarif||0);},(c.tarif||0));}
 function clientNextVisit(c){
   var dates=(c.services||[]).map(function(s){return s.prochaineVisite;}).filter(Boolean);
   if(c.prochaineVisite)dates.push(c.prochaineVisite);
-  if(!dates.length)return '';
-  return dates.sort()[0];
+  return dates.length?dates.sort()[0]:'';
+}
+function clientSeasonDone(c, yr){
+  // Returns true if client has at least one intervention in season yr
+  return (c.interventions||[]).some(function(i){return i.date&&i.date.startsWith(String(yr));});
 }
 
+function save(){
+  localStorage.setItem('pp_clients',JSON.stringify(clients));
+  localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
+  localStorage.setItem('pp_prestas',JSON.stringify(prestations));
+  localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));
+  if(syncCode) pushSync();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CLOUD SYNC via Claude artifact storage
+// ══════════════════════════════════════════════════════════════════════
+function hashData(d){var s=JSON.stringify(d);var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return String(h);}
+
+async function pushSync(){
+  if(!syncCode)return;
+  var data={clients:clients,secteurs:secteurs,prestations:prestations,tarifs:tarifs,ts:Date.now()};
+  var h=hashData(data);
+  if(h===lastSyncHash)return;
+  try{
+    await window.storage.set('poolpro:'+syncCode, JSON.stringify(data), true);
+    lastSyncHash=h;
+    setSyncStatus('ok','Synchronisé — '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSyncStatus('err','Erreur de synchronisation');}
+}
+
+async function pullSync(){
+  if(!syncCode)return;
+  try{
+    var res=await window.storage.get('poolpro:'+syncCode, true);
+    if(!res)return;
+    var data=JSON.parse(res.value);
+    var h=hashData(data);
+    if(h===lastSyncHash)return; // no change
+    // Merge: remote wins (last write wins)
+    clients=data.clients||clients;
+    secteurs=data.secteurs||secteurs;
+    prestations=data.prestations||prestations;
+    tarifs=data.tarifs||tarifs;
+    lastSyncHash=h;
+    // Save locally
+    localStorage.setItem('pp_clients',JSON.stringify(clients));
+    localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
+    localStorage.setItem('pp_prestas',JSON.stringify(prestations));
+    localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));
+    renderAll();renderSettings();
+    setSyncStatus('ok','Synchronisé — '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSyncStatus('err','Erreur de connexion');}
+}
+
+function setSyncStatus(type,msg){
+  var bar=document.getElementById('sync-bar');
+  var dot=document.getElementById('sync-dot');
+  var txt=document.getElementById('sync-status');
+  bar.className='';bar.id='sync-bar';
+  dot.className='sync-dot';
+  if(type==='ok'){bar.classList.add('ok');dot.classList.add('ok');}
+  else if(type==='err'){bar.classList.add('err');dot.classList.add('err');}
+  else if(type==='loading'){dot.classList.add('loading');}
+  txt.textContent=msg;
+}
+
+function connectSync(){
+  var code=document.getElementById('sync-code-input').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(!code){showToast('⚠️ Entrez un code','error');return;}
+  syncCode=code;
+  localStorage.setItem('pp_sync_code',code);
+  document.getElementById('sync-code-input').value=code;
+  setSyncStatus('loading','Connexion au code "'+code+'"…');
+  pullSync();
+  startSyncLoop();
+  showToast('🔗 Connecté au code "'+code+'"','success');
+}
+
+function genCode(){
+  var chars='abcdefghjkmnpqrstuvwxyz23456789';
+  var code='';for(var i=0;i<8;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('sync-code-input').value=code;
+  connectSync();
+}
+
+function startSyncLoop(){
+  if(syncInterval)clearInterval(syncInterval);
+  syncInterval=setInterval(pullSync, 10000); // pull every 10s
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════════════════════════════
 var map=L.map('map',{zoomControl:true}).setView([46.5,-72.5],6);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
 
-function makeIcon(color,statut){
+function makeIcon(color,statut,done){
   var glow=statut==='Problème'?'rgba(239,68,68,.5)':statut==='En attente'?'rgba(251,191,36,.35)':'transparent';
   var cid=color.replace('#','');
-  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 48" width="26" height="35">'
-    +(glow!=='transparent'?'<circle cx="18" cy="16" r="14" fill="'+glow+'" opacity=".6"/>':'')
+  var check=done?'<circle cx="24" cy="8" r="7" fill="#22c55e"/><text x="24" y="12" text-anchor="middle" font-size="9" fill="white">✓</text>':'';
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" width="26" height="36">'
+    +(glow!=='transparent'?'<circle cx="16" cy="14" r="13" fill="'+glow+'" opacity=".5"/>':'')
     +'<filter id="sh'+cid+'"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".5"/></filter>'
-    +'<path filter="url(#sh'+cid+')" fill="'+color+'" stroke="rgba(255,255,255,.35)" stroke-width="1.5" d="M18 2C10.3 2 4 8.3 4 16c0 10.5 14 30 14 30S32 26.5 32 16C32 8.3 25.7 2 18 2z"/>'
-    +'<text x="18" y="21" text-anchor="middle" font-size="10" fill="rgba(255,255,255,.9)">🏊</text>'
-    +'</svg>';
-  return L.divIcon({html:svg,className:'',iconSize:[26,35],iconAnchor:[13,35],popupAnchor:[0,-35]});
+    +'<path filter="url(#sh'+cid+')" fill="'+color+'" stroke="rgba(255,255,255,.35)" stroke-width="1.5" d="M16 2C9.3 2 4 7.3 4 14c0 9.5 12 30 12 30S28 23.5 28 14C28 7.3 22.7 2 16 2z"/>'
+    +'<text x="16" y="19" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.9)">🏊</text>'
+    +check+'</svg>';
+  return L.divIcon({html:svg,className:'',iconSize:[26,36],iconAnchor:[13,36],popupAnchor:[0,-36]});
 }
 
 function addMarker(c){
   if(!c.lat||!c.lng)return;
   var color=gsc(c.secteur);
-  var m=L.marker([c.lat,c.lng],{icon:makeIcon(color,c.statut)}).bindPopup(popupHtml(c)).addTo(map);
+  var done=clientSeasonDone(c,currentSeason);
+  var m=L.marker([c.lat,c.lng],{icon:makeIcon(color,c.statut,done)}).bindPopup(popupHtml(c)).addTo(map);
   m.on('click',function(){openClientModal(c.id);});
   markers[c.id]=m;
 }
 function refreshMarker(c){if(markers[c.id]){map.removeLayer(markers[c.id]);delete markers[c.id];}addMarker(c);}
+function refreshAllMarkers(){clients.forEach(function(c){refreshMarker(c);});}
+
 function popupHtml(c){
   var se={Ouverte:'🟢',Fermée:'⚫','En attente':'🟡','Problème':'🔴'}[c.statut]||'⚪';
-  return '<div style="font-family:DM Sans,sans-serif;min-width:200px;">'
-    +'<div style="font-weight:700;font-size:14px;margin-bottom:4px;">'+se+' '+c.nom+'</div>'
-    +'<div style="font-size:12px;color:#555;margin-bottom:3px;">📍 '+c.adresse+', '+c.cp+' '+c.ville+'</div>'
-    +(c.typePiscine?'<div style="font-size:12px;margin-bottom:2px;">🏊 '+c.typePiscine+(c.dimensions?' — '+c.dimensions+' pi':'')+'</div>':'')
-    +(c.presta?'<div style="font-size:12px;margin-bottom:2px;">🔧 '+c.presta+'</div>':'')
-    +(c.tarif?'<div style="font-size:12px;margin-bottom:2px;">💵 '+c.tarif+' $/mois</div>':'')
-    +(c.prochaineVisite?'<div style="font-size:12px;">📅 Prochaine : '+c.prochaineVisite+'</div>':'')
+  var svcs=(c.services||[]);
+  var done=clientSeasonDone(c,currentSeason);
+  return '<div style="font-family:DM Sans,sans-serif;min-width:190px;">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+se+' '+c.nom+(done?' ✅':'')+'</div>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:3px;">📍 '+c.adresse+', '+c.cp+' '+c.ville+'</div>'
+    +(c.typePiscine?'<div style="font-size:11px;margin-bottom:2px;">🏊 '+c.typePiscine+'</div>':'')
+    +(svcs.length?'<div style="font-size:11px;margin-bottom:2px;">🔧 '+svcs.map(function(s){return s.presta;}).join(', ')+'</div>':'')
+    +(clientTotalTarif(c)?'<div style="font-size:11px;margin-bottom:2px;">💵 '+clientTotalTarif(c)+' $/mois</div>':'')
+    +(c.tel?'<div style="font-size:11px;">📞 '+c.tel+'</div>':'')
     +'</div>';
 }
 
-async function geocode(a,cp,v,country,prov){
-  var q=country==='QC'?encodeURIComponent(a+', '+v+', '+(prov||'QC')+', Canada'):encodeURIComponent(a+', '+cp+' '+v+', France');
-  try{var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1',{headers:{'Accept-Language':'fr'}});var d=await r.json();if(d.length>0)return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};}catch(e){}return null;
+function toggleMap(){
+  var w=document.getElementById('map-wrapper');
+  w.classList.toggle('show');
+  if(w.classList.contains('show'))setTimeout(function(){map.invalidateSize();},300);
 }
 
-function setCountry(code,btn){
-  currentCountry=code;
-  document.querySelectorAll('.ctry-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  var qc=code==='QC';
-  document.getElementById('grp-province').style.display=qc?'flex':'none';
-  document.getElementById('f-cp').placeholder=qc?'G1A 0A1':'75001';
-  document.getElementById('f-ville').placeholder=qc?'Québec':'Paris';
-  document.getElementById('f-tel').placeholder=qc?'514 000-0000':'06 00 00 00 00';
+// ══════════════════════════════════════════════════════════════════════
+// GEOCODING (Québec / Canada)
+// ══════════════════════════════════════════════════════════════════════
+async function geocode(a,cp,v){
+  var q=encodeURIComponent(a+', '+v+', QC, Canada');
+  try{
+    var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1&countrycodes=ca',{headers:{'Accept-Language':'fr'}});
+    var d=await r.json();
+    if(d.length)return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// SEASON
+// ══════════════════════════════════════════════════════════════════════
+function changeSeason(dir){
+  if(dir===0)currentSeason=new Date().getFullYear();
+  else currentSeason+=dir;
+  document.getElementById('cur-season-label').textContent=currentSeason;
+  renderList();refreshAllMarkers();updateStats();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SERVICE FORM
+// ══════════════════════════════════════════════════════════════════════
+function renderFormServices(){
+  var el=document.getElementById('f-services-list');
+  var tot=document.getElementById('f-services-total');
+  if(!formServices.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:5px 0;">Aucun service — ajoutez-en ci-dessous.</div>';
+    tot.style.display='none';return;
+  }
+  el.innerHTML=formServices.map(function(s,i){
+    return '<div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:9px;">'
+      +'<div style="flex:1;">'
+      +'<div style="font-size:12px;font-weight:700;">🔧 '+s.presta+'</div>'
+      +(s.freq?'<div style="font-size:10px;color:var(--text2);">🔄 '+s.freq+'</div>':'')
+      +(s.prochaineVisite?'<div style="font-size:10px;color:var(--yellow);">📅 '+s.prochaineVisite+'</div>':'')
+      +'</div>'
+      +'<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:700;color:var(--green);">'+s.tarif+' $</span>'
+      +'<button class="btn btn-sm btn-danger" onclick="rmFormSvc('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+  var total=formServices.reduce(function(s,x){return s+(x.tarif||0);},0);
+  tot.style.display='block';
+  tot.textContent='Total : '+total.toFixed(2)+' $';
+}
+function addServiceToForm(){
+  var p=document.getElementById('f-new-presta').value;
+  if(!p){showToast('⚠️ Choisissez un service','error');return;}
+  formServices.push({presta:p,freq:document.getElementById('f-new-freq').value,tarif:parseFloat(document.getElementById('f-new-tarif').value)||0,prochaineVisite:document.getElementById('f-new-visite').value});
+  ['f-new-presta','f-new-freq','f-new-tarif','f-new-visite'].forEach(function(id){document.getElementById(id).value='';});
+  renderFormServices();showToast('✅ Service ajouté','success');
+}
+function rmFormSvc(i){formServices.splice(i,1);renderFormServices();}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADD / EDIT CLIENT
+// ══════════════════════════════════════════════════════════════════════
 async function addClient(){
   var nom=document.getElementById('f-nom').value.trim();
   var adresse=document.getElementById('f-adresse').value.trim();
   var cp=document.getElementById('f-cp').value.trim();
   var ville=document.getElementById('f-ville').value.trim();
   if(!nom||!adresse||!cp||!ville){showToast('⚠️ Remplissez les champs obligatoires *','error');return;}
-  document.getElementById('geocoding-status').style.display='flex';
-  var prov=document.getElementById('f-province').value;
-  var coords=await geocode(adresse,cp,ville,currentCountry,prov);
-  document.getElementById('geocoding-status').style.display='none';
+  document.getElementById('geo-status').style.display='flex';
+  var coords=await geocode(adresse,cp,ville);
+  document.getElementById('geo-status').style.display='none';
   var client={
-    id:editingId||Date.now().toString(),nom:nom,adresse:adresse,cp:cp,ville:ville,
-    country:currentCountry,province:currentCountry==='QC'?prov:'',
+    id:editingId||Date.now().toString(),
+    nom:nom,adresse:adresse,cp:cp,ville:ville,
     secteur:document.getElementById('f-secteur').value,
     statut:document.getElementById('f-statut').value,
     typePiscine:document.getElementById('f-type-piscine').value,
@@ -422,7 +677,9 @@ async function addClient(){
     annee:document.getElementById('f-annee').value,
     equipements:document.getElementById('f-equipements').value.trim(),
     notesPiscine:document.getElementById('f-notes-piscine').value.trim(),
-    services:formServices.slice(), // array of {presta, freq, tarif, prochaineVisite}
+    services:formServices.slice(),
+    tel:document.getElementById('f-tel').value.trim(),
+    email:document.getElementById('f-email').value.trim(),
     notes:document.getElementById('f-notes').value.trim(),
     interventions:editingId?(clients.find(function(c){return c.id===editingId;})||{}).interventions||[]:[],
     lat:coords?coords.lat:null,lng:coords?coords.lng:null
@@ -433,28 +690,68 @@ async function addClient(){
     if(markers[editingId]){map.removeLayer(markers[editingId]);delete markers[editingId];}
     editingId=null;document.getElementById('btn-submit').textContent='📍 Ajouter & placer sur la carte';
   }else{clients.push(client);}
-  save();if(coords){addMarker(client);map.flyTo([coords.lat,coords.lng],15,{duration:1});}
+  save();
+  if(coords){addMarker(client);map.flyTo([coords.lat,coords.lng],15,{duration:1});}
   else showToast('⚠️ Adresse non trouvée sur la carte','error');
-  resetForm();renderAll();if(coords)showToast('✅ '+nom+' ajouté !','success');
+  resetForm();renderAll();
+  if(coords)showToast('✅ '+nom+' ajouté !','success');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// RENDER LIST
+// ══════════════════════════════════════════════════════════════════════
 function renderList(){
   var search=(document.getElementById('search-input').value||'').toLowerCase();
-  var list=document.getElementById('client-list');
+  var filSect=document.getElementById('fil-secteur').value;
+  var filStatut=document.getElementById('fil-statut').value;
+  var filType=document.getElementById('fil-type').value;
+  var filPresta=document.getElementById('fil-presta').value;
+  var filSaison=document.getElementById('fil-saison').value;
+  var sortBy=document.getElementById('fil-sort').value;
+
   var filtered=clients.filter(function(c){
-    return(!activeFilter||c.secteur===activeFilter)&&(c.nom.toLowerCase().includes(search)||c.adresse.toLowerCase().includes(search)||c.ville.toLowerCase().includes(search));
+    if(filSect&&c.secteur!==filSect)return false;
+    if(filStatut&&c.statut!==filStatut)return false;
+    if(filType&&c.typePiscine!==filType)return false;
+    if(filPresta){var svcs=(c.services||[]);if(!svcs.some(function(s){return s.presta===filPresta;}))return false;}
+    if(filSaison==='done'&&!clientSeasonDone(c,currentSeason))return false;
+    if(filSaison==='todo'&&clientSeasonDone(c,currentSeason))return false;
+    if(search&&!c.nom.toLowerCase().includes(search)&&!c.adresse.toLowerCase().includes(search)&&!c.ville.toLowerCase().includes(search))return false;
+    return true;
   });
+
+  // Sort
+  filtered.sort(function(a,b){
+    if(sortBy==='nom')return a.nom.localeCompare(b.nom,'fr');
+    if(sortBy==='secteur')return (a.secteur||'').localeCompare(b.secteur||'','fr');
+    if(sortBy==='type')return (a.typePiscine||'').localeCompare(b.typePiscine||'','fr');
+    if(sortBy==='visite'){var av=clientNextVisit(a)||'9999';var bv=clientNextVisit(b)||'9999';return av.localeCompare(bv);}
+    if(sortBy==='tarif')return clientTotalTarif(b)-clientTotalTarif(a);
+    if(sortBy==='presta'){var ap=(a.services||[])[0];var bp=(b.services||[])[0];return (ap?ap.presta:'').localeCompare(bp?bp.presta:'','fr');}
+    if(sortBy==='saison'){var ad=clientSeasonDone(a,currentSeason)?0:1;var bd=clientSeasonDone(b,currentSeason)?0:1;if(ad!==bd)return ad-bd;return a.nom.localeCompare(b.nom,'fr');}
+    return 0;
+  });
+
+  // Season progress
+  var total=clients.length;
+  var done=clients.filter(function(c){return clientSeasonDone(c,currentSeason);}).length;
+  document.getElementById('season-progress').innerHTML=
+    done+'/'+total+' clients complétés ('+Math.round(done/total*100||0)+'%) — '
+    +'<span style="color:var(--green);">'+done+' ✅</span> | '
+    +'<span style="color:var(--yellow);">'+(total-done)+' ⏳</span>';
+
   document.getElementById('list-count').textContent=clients.length;
-  if(filtered.length===0){list.innerHTML='<div class="empty"><div class="empty-icon">🏊</div><p>Aucun client trouvé</p></div>';return;}
+  var list=document.getElementById('client-list');
+  if(!filtered.length){list.innerHTML='<div class="empty"><div class="empty-icon">🏊</div><p>Aucun client trouvé</p></div>';return;}
+
   var today=new Date();today.setHours(0,0,0,0);
   list.innerHTML=filtered.map(function(c){
     var color=gsc(c.secteur);
-    var flag=c.country==='QC'?'🍁':'🇫🇷';
     var sE={Ouverte:'🟢',Fermée:'⚫','En attente':'🟡','Problème':'🔴'}[c.statut]||'⚪';
-    var sCl={'Ouverte':'status-ouverte','Fermée':'status-fermee','En attente':'status-attente','Problème':'status-probleme'}[c.statut]||'status-attente';
-    var ni=(c.interventions||[]).length;
+    var sCl={'Ouverte':'s-ouverte','Fermée':'s-fermee','En attente':'s-attente','Problème':'s-probleme'}[c.statut]||'s-attente';
+    var done=clientSeasonDone(c,currentSeason);
     var svcs=c.services||[];
-    var totalTarif=svcs.reduce(function(s,x){return s+(x.tarif||0);},c.tarif||0);
+    var totalTarif=clientTotalTarif(c);
     var nextV=clientNextVisit(c);
     var nvHtml='';
     if(nextV){
@@ -463,25 +760,46 @@ function renderList(){
       var lbl=diff<0?'⚠️ En retard ('+Math.abs(diff)+'j)':diff===0?'📅 Aujourd\'hui':diff<=7?'📅 Dans '+diff+'j':'📅 '+nextV;
       nvHtml='<div class="next-visit'+(diff<0?' overdue':'')+'">'+lbl+'</div>';
     }
-    var svcHtml=svcs.length
-      ?svcs.map(function(s){return '<span class="pool-chip" style="color:var(--accent);border-color:rgba(0,180,216,.3);background:rgba(0,180,216,.08);">🔧 '+s.presta+(s.tarif?' — '+s.tarif+'$':'')+'</span>';}).join('')
-      :(c.presta?'<span class="meta-item">🔧 '+c.presta+'</span>':'');
-    return '<div class="client-card" id="card-'+c.id+'" onclick="openClientModal(\''+c.id+'\')">'
-      +'<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:'+color+';border-radius:3px 0 0 3px;"></div>'
-      +'<div class="card-top"><div class="client-name">'+flag+' '+c.nom+'</div>'
-      +'<div class="card-tags"><span class="status-badge '+sCl+'">'+sE+' '+c.statut+'</span>'
-      +(c.secteur?'<span class="tag" style="background:'+color+'18;color:'+color+'">'+c.secteur+'</span>':'')+'</div></div>'
-      +'<div class="client-address">📍 '+c.adresse+', '+c.cp+' '+c.ville+(c.province?', '+c.province:'')+'</div>'
-      +(c.typePiscine?'<div class="card-pool"><span class="pool-chip">🏊 '+c.typePiscine+'</span>'+(c.dimensions?'<span class="pool-chip">📐 '+c.dimensions+'</span>':'')+(c.volume?'<span class="pool-chip">💧 '+c.volume+'gal</span>':'')+'</div>':'')
-      +'<div class="card-pool" style="margin-top:5px;">'+svcHtml+'</div>'
-      +'<div class="card-meta">'+(totalTarif?'<span class="meta-item" style="color:var(--green);font-weight:700;">💵 '+totalTarif.toFixed(0)+'$/mois</span>':'')+(ni?'<span class="meta-item">📋 '+ni+' interv.</span>':'')+'</div>'
+    var ni=(c.interventions||[]).length;
+    return '<div class="client-card '+(done?'season-done':'season-todo')+'" id="card-'+c.id+'" onclick="openClientModal(\''+c.id+'\')" style="border-left-color:'+color+';">'
+      +'<div class="card-top">'
+      +'<div class="client-name">'+c.nom+'</div>'
+      +'<div class="card-tags">'
+      +'<span class="status-badge '+sCl+'">'+sE+' '+c.statut+'</span>'
+      +(c.secteur?'<span class="tag" style="background:'+color+'18;color:'+color+';">'+c.secteur+'</span>':'')
+      +(done?'<span class="season-year-badge">✅ '+currentSeason+'</span>':'')
+      +'</div></div>'
+      +'<div class="card-address">📍 '+c.adresse+', '+c.cp+' '+c.ville+'</div>'
+      +(c.typePiscine?'<div class="card-pool"><span class="pool-chip">🏊 '+c.typePiscine+'</span>'+(c.dimensions?'<span class="pool-chip">📐 '+c.dimensions+'</span>':'')+'</div>':'')
+      +(svcs.length?'<div class="card-pool">'+svcs.map(function(s){return'<span class="svc-chip">🔧 '+s.presta+(s.tarif?' — '+s.tarif+'$':'')+'</span>';}).join('')+'</div>':'')
+      +'<div class="card-meta">'
+      +(totalTarif?'<span class="meta-item" style="color:var(--green);font-weight:700;">💵 '+totalTarif+'$/mois</span>':'')
+      +(ni?'<span class="meta-item">📋 '+ni+' interv.</span>':'')
+      +'</div>'
       +nvHtml
       +'<div class="card-actions">'
       +'<button class="btn btn-sm btn-edit" onclick="event.stopPropagation();editClient(\''+c.id+'\')">✏️</button>'
       +(c.lat?'<button class="btn btn-sm btn-go" onclick="event.stopPropagation();flyTo(\''+c.id+'\')">🗺️</button>':'')
-      +'<button class="btn btn-sm btn-orange" onclick="event.stopPropagation();modalClientId=\''+c.id+'\';openInterventionForm()">➕ Intervention</button>'
+      +'<button class="btn btn-sm btn-orange" onclick="event.stopPropagation();modalClientId=\''+c.id+'\';openIntForm()">➕ Interv.</button>'
+      +'<button class="btn btn-sm '+(done?'btn-check done':'btn-check')+'" onclick="event.stopPropagation();toggleSeasonDone(\''+c.id+'\')" title="'+(done?'Marquer non fait':'Marquer fait cette saison')+'">'
+      +(done?'✅ Fait '+currentSeason:'⏳ Marquer fait')
+      +'</button>'
       +'</div></div>';
   }).join('');
+}
+
+function toggleSeasonDone(id){
+  var c=clients.find(function(x){return x.id===id;});if(!c)return;
+  var done=clientSeasonDone(c,currentSeason);
+  if(done){
+    // Remove season marker intervention
+    c.interventions=(c.interventions||[]).filter(function(i){return !(i.type==='__season__'&&i.date.startsWith(String(currentSeason)));});
+  }else{
+    if(!c.interventions)c.interventions=[];
+    c.interventions.push({id:Date.now().toString(),date:currentSeason+'-01-01',type:'__season__',tech:'',prix:0,notes:'Marqué complété — saison '+currentSeason,prochaine:''});
+  }
+  save();renderList();refreshMarker(c);updateStats();
+  showToast(done?'⏳ Retiré de la saison '+currentSeason:'✅ Marqué complété — saison '+currentSeason,done?'error':'success');
 }
 
 function flyTo(id){var c=clients.find(function(x){return x.id===id;});if(c&&c.lat){map.flyTo([c.lat,c.lng],16,{duration:1});if(markers[id])markers[id].openPopup();}}
@@ -489,15 +807,11 @@ function flyTo(id){var c=clients.find(function(x){return x.id===id;});if(c&&c.la
 function editClient(id){
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
   closeModal();
-  currentCountry=c.country||'QC';
-  document.querySelectorAll('.ctry-btn').forEach(function(b,i){b.classList.toggle('active',(i===0&&currentCountry==='FR')||(i===1&&currentCountry==='QC'));});
-  document.getElementById('grp-province').style.display=currentCountry==='QC'?'flex':'none';
-  var m={'f-nom':'nom','f-adresse':'adresse','f-cp':'cp','f-ville':'ville','f-province':'province','f-secteur':'secteur','f-statut':'statut','f-type-piscine':'typePiscine','f-volume':'volume','f-dimensions':'dimensions','f-annee':'annee','f-equipements':'equipements','f-notes-piscine':'notesPiscine','f-notes':'notes'};
+  var m={'f-nom':'nom','f-adresse':'adresse','f-cp':'cp','f-ville':'ville','f-secteur':'secteur','f-statut':'statut','f-type-piscine':'typePiscine','f-volume':'volume','f-dimensions':'dimensions','f-annee':'annee','f-equipements':'equipements','f-notes-piscine':'notesPiscine','f-tel':'tel','f-email':'email','f-notes':'notes'};
   Object.keys(m).forEach(function(fid){document.getElementById(fid).value=c[m[fid]]||'';});
   if(!c.statut)document.getElementById('f-statut').value='Ouverte';
-  // Load services — support legacy single-service format too
   formServices=(c.services||[]).slice();
-  if(!formServices.length&&c.presta){formServices=[{presta:c.presta,freq:c.freq||'',tarif:c.tarif||0,prochaineVisite:c.prochaineVisite||''}];}
+  if(!formServices.length&&c.presta)formServices=[{presta:c.presta,freq:c.freq||'',tarif:c.tarif||0,prochaineVisite:c.prochaineVisite||''}];
   renderFormServices();
   editingId=id;document.getElementById('btn-submit').textContent='💾 Enregistrer';switchTab('add');
 }
@@ -509,82 +823,83 @@ function deleteClient(id){
   save();renderAll();closeModal();showToast('🗑 Client supprimé','error');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// CLIENT MODAL
+// ══════════════════════════════════════════════════════════════════════
 function openClientModal(id){
   modalClientId=id;
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
   document.getElementById('modal-title').textContent='🏊 '+c.nom;
-  var sCl={'Ouverte':'status-ouverte','Fermée':'status-fermee','En attente':'status-attente','Problème':'status-probleme'}[c.statut]||'status-attente';
+  var sCl={'Ouverte':'s-ouverte','Fermée':'s-fermee','En attente':'s-attente','Problème':'s-probleme'}[c.statut]||'s-attente';
   var sE={Ouverte:'🟢',Fermée:'⚫','En attente':'🟡','Problème':'🔴'}[c.statut]||'⚪';
-  var ints=(c.interventions||[]).slice().reverse();
+  var svcs=c.services||[];
+  var total=clientTotalTarif(c);
+  var done=clientSeasonDone(c,currentSeason);
+  // filter out __season__ from display
+  var ints=(c.interventions||[]).filter(function(i){return i.type!=='__season__';}).slice().reverse();
   var intHtml=ints.length?ints.map(function(i){
     return '<div class="intervention-card">'
       +'<div class="int-header"><span class="int-date">'+i.date+'</span><span class="int-type">'+i.type+'</span>'+(i.prix?'<span class="int-price">'+i.prix+' $</span>':'')+'</div>'
       +(i.tech?'<div style="font-size:11px;color:var(--text3);">👤 '+i.tech+'</div>':'')
-      +(i.notes?'<div class="int-notes">'+i.notes+'</div>':'')
-      +(i.prochaine?'<div style="font-size:11px;color:var(--yellow);margin-top:3px;">📅 Prochain : '+i.prochaine+'</div>':'')
+      +(i.notes?'<div style="font-size:12px;color:var(--text2);margin-top:2px;">'+i.notes+'</div>':'')
+      +(i.prochaine?'<div style="font-size:11px;color:var(--yellow);margin-top:2px;">📅 Prochain : '+i.prochaine+'</div>':'')
       +'</div>';
-  }).join(''):'<p style="font-size:12px;color:var(--text3);">Aucune intervention.</p>';
-  var svcs=c.services||[];
-  var totalTarif=svcs.reduce(function(s,x){return s+(x.tarif||0);},(c.tarif||0));
+  }).join(''):'<p style="font-size:12px;color:var(--text3);">Aucune intervention enregistrée.</p>';
+
   var svcBlock=svcs.length
     ?'<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">'
-      +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;">📋 Services actifs ('+svcs.length+')</div>'
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">'
+      +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;">📋 Services ('+svcs.length+')</div>'
       +svcs.map(function(s){
-        return '<div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
-          +'<div style="flex:1;">'
-          +'<div style="font-size:13px;font-weight:700;color:var(--accent);">🔧 '+s.presta+'</div>'
+        return '<div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:9px;margin-bottom:5px;">'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--accent);">🔧 '+s.presta+'</div>'
           +(s.freq?'<div style="font-size:11px;color:var(--text2);">🔄 '+s.freq+'</div>':'')
-          +(s.prochaineVisite?'<div style="font-size:11px;color:var(--yellow);">📅 Prochain : '+s.prochaineVisite+'</div>':'')
-          +'</div>'
-          +'<div style="font-family:DM Mono,monospace;font-size:14px;font-weight:700;color:var(--green);">'+s.tarif+' $</div>'
-          +'</div>';
+          +(s.prochaineVisite?'<div style="font-size:11px;color:var(--yellow);">📅 '+s.prochaineVisite+'</div>':'')
+          +'</div><div style="font-family:DM Mono,monospace;font-size:14px;font-weight:700;color:var(--green);">'+s.tarif+' $</div></div>';
       }).join('')
-      +'</div>'
-      +(totalTarif?'<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;color:var(--green);text-align:right;margin-bottom:8px;">Total mensuel : '+totalTarif.toFixed(2)+' $</div>':'')
-    :(c.presta?'<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;"><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;">'
-      +'<div><div style="font-size:10px;color:var(--text3);">Service</div><div style="font-size:13px;font-weight:600;">'+c.presta+'</div></div>'
-      +(c.freq?'<div><div style="font-size:10px;color:var(--text3);">Fréquence</div><div style="font-size:13px;">'+c.freq+'</div></div>':'')
-      +(c.tarif?'<div><div style="font-size:10px;color:var(--text3);">Tarif</div><div style="font-size:13px;font-weight:700;color:var(--green);">'+c.tarif+' $</div></div>':'')
-      +'</div>':'');
+      +(total?'<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:700;color:var(--green);text-align:right;margin-bottom:6px;">Total : '+total.toFixed(2)+' $/mois</div>':'')
+    :'';
+
   document.getElementById('modal-body').innerHTML=
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px;">'
     +'<span class="status-badge '+sCl+'">'+sE+' '+c.statut+'</span>'
     +(c.secteur?'<span style="font-size:12px;font-weight:700;color:'+gsc(c.secteur)+';">📍 '+c.secteur+'</span>':'')
-    +(totalTarif?'<span style="font-size:12px;font-weight:700;color:var(--green);">💵 '+totalTarif.toFixed(0)+' $/mois</span>':'')
+    +(done?'<span class="season-year-badge">✅ Fait '+currentSeason+'</span>':'<span class="season-year-badge" style="background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.3);">⏳ Non fait '+currentSeason+'</span>')
     +'</div>'
-    +'<div style="font-size:13px;margin-bottom:8px;">📍 '+c.adresse+', '+c.cp+' '+c.ville+(c.province?', '+c.province:'')+'</div>'
-    +(c.tel||c.email?'<div style="display:flex;gap:14px;margin-bottom:8px;">'+(c.tel?'<span style="font-size:13px;">📞 '+c.tel+'</span>':'')+(c.email?'<span style="font-size:13px;">✉️ '+c.email+'</span>':'')+'</div>':'')
+    +'<div style="font-size:13px;margin-bottom:7px;">📍 '+c.adresse+', '+c.cp+' '+c.ville+'</div>'
+    +(c.tel||c.email?'<div style="display:flex;gap:12px;margin-bottom:7px;flex-wrap:wrap;">'+(c.tel?'<span style="font-size:12px;">📞 <a href="tel:'+c.tel+'" style="color:var(--accent);">'+c.tel+'</a></span>':'')+(c.email?'<span style="font-size:12px;">✉️ '+c.email+'</span>':'')+'</div>':'')
     +'<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">'
-    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;">🏊 Piscine</div>'
-    +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">'
+    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:5px;">🏊 Piscine</div>'
+    +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px;">'
     +(c.typePiscine?'<span class="pool-chip">'+c.typePiscine+'</span>':'')
     +(c.dimensions?'<span class="pool-chip">📐 '+c.dimensions+' pi</span>':'')
     +(c.volume?'<span class="pool-chip">💧 '+c.volume+' gal</span>':'')
     +(c.annee?'<span class="pool-chip">📅 '+c.annee+'</span>':'')
     +'</div>'
-    +(c.equipements?'<div style="font-size:12px;color:var(--text2);margin-bottom:6px;">🔩 '+c.equipements+'</div>':'')
-    +(c.notesPiscine?'<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:6px;padding:7px;margin-bottom:6px;">'+c.notesPiscine+'</div>':'')
+    +(c.equipements?'<div style="font-size:12px;color:var(--text2);margin-bottom:5px;">🔩 '+c.equipements+'</div>':'')
+    +(c.notesPiscine?'<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:6px;padding:7px;margin-bottom:5px;">'+c.notesPiscine+'</div>':'')
     +svcBlock
-    +(c.notes?'<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:6px;padding:7px;margin-bottom:6px;">📝 '+c.notes+'</div>':'')
+    +(c.notes?'<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:6px;padding:7px;margin-bottom:5px;">📝 '+c.notes+'</div>':'')
     +'<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">'
-    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;">📋 Interventions ('+ints.length+')</div>'
-    +'<div class="intervention-list">'+intHtml+'</div>';
+    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;">📋 Interventions réelles ('+ints.length+')</div>'
+    +intHtml;
   document.getElementById('modal-client').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-client').classList.remove('open');modalClientId=null;}
 function editFromModal(){if(modalClientId)editClient(modalClientId);}
 function deleteFromModal(){if(modalClientId)deleteClient(modalClientId);}
 
-function openInterventionForm(){
+// ══════════════════════════════════════════════════════════════════════
+// INTERVENTIONS
+// ══════════════════════════════════════════════════════════════════════
+function openIntForm(){
   if(!modalClientId)return;
   document.getElementById('int-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('int-type').innerHTML='<option value="">— Choisir —</option>'+prestations.map(function(p){return'<option>'+p+'</option>';}).join('');
   ['int-type','int-tech','int-prix','int-notes','int-prochaine'].forEach(function(id){if(id!=='int-date')document.getElementById(id).value='';});
-  document.getElementById('modal-intervention').classList.add('open');
+  document.getElementById('modal-int').classList.add('open');
 }
-function closeInterventionModal(){document.getElementById('modal-intervention').classList.remove('open');}
-function saveIntervention(){
+function closeIntModal(){document.getElementById('modal-int').classList.remove('open');}
+function saveInt(){
   var date=document.getElementById('int-date').value;
   var type=document.getElementById('int-type').value;
   if(!date||!type){showToast('⚠️ Date et service obligatoires','error');return;}
@@ -592,16 +907,21 @@ function saveIntervention(){
   if(!c.interventions)c.interventions=[];
   var prochaine=document.getElementById('int-prochaine').value;
   c.interventions.push({id:Date.now().toString(),date:date,type:type,tech:document.getElementById('int-tech').value.trim(),prix:parseFloat(document.getElementById('int-prix').value)||0,notes:document.getElementById('int-notes').value.trim(),prochaine:prochaine});
-  if(prochaine)c.prochaineVisite=prochaine;
-  save();closeInterventionModal();openClientModal(modalClientId);renderAll();showToast('✅ Intervention enregistrée','success');
+  if(prochaine){
+    // Update matching service prochaine visite
+    (c.services||[]).forEach(function(s){if(s.presta===type)s.prochaineVisite=prochaine;});
+  }
+  save();closeIntModal();openClientModal(modalClientId);renderAll();showToast('✅ Intervention enregistrée','success');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ZONES
+// ══════════════════════════════════════════════════════════════════════
 function renderZones(){
   var el=document.getElementById('zones-summary');
-  if(!prestations.length||!secteurs.length){el.innerHTML='<div class="empty"><div class="empty-icon">💲</div><p>Ajoutez services et secteurs dans ⚙️ Config.</p></div>';return;}
-  var html='<div style="overflow-x:auto;"><p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Cliquez sur une cellule pour modifier le tarif.</p>'
-    +'<table class="zones-table"><thead><tr><th style="min-width:130px;">Service</th>'
-    +secteurs.map(function(s){return'<th style="text-align:center;min-width:80px;"><span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:'+s.color+';display:inline-block;"></span>'+s.name+'</span></th>';}).join('')
+  if(!prestations.length||!secteurs.length){el.innerHTML='<div class="empty"><div class="empty-icon">💲</div><p>Ajoutez des services et secteurs dans ⚙️ Config.</p></div>';return;}
+  var html='<div style="overflow-x:auto;"><table class="zones-table"><thead><tr><th>Service</th>'
+    +secteurs.map(function(s){return'<th style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:'+s.color+';display:inline-block;"></span>'+s.name+'</span></th>';}).join('')
     +'</tr></thead><tbody>';
   prestations.forEach(function(p){
     html+='<tr><td><strong style="font-size:12px;">'+p+'</strong></td>';
@@ -612,41 +932,42 @@ function renderZones(){
     });
     html+='</tr>';
   });
-  html+='</tbody></table></div><p style="font-size:11px;color:var(--text3);margin-top:7px;">💡 Tarifs de référence — le tarif final est dans la fiche client.</p>';
+  html+='</tbody></table></div><p style="font-size:11px;color:var(--text3);margin-top:7px;">💡 Cliquez sur une cellule pour modifier le tarif de référence.</p>';
   el.innerHTML=html;
 }
 function openTE(p,s,cell){
   var cur=gt(p,s);var color=gsc(s);
-  cell.innerHTML='<input type="number" min="0" step="0.01" value="'+(cur!==''?cur:'')+'" placeholder="0" '
-    +'style="width:72px;text-align:center;font-family:DM Mono,monospace;font-size:12px;padding:4px;border:1px solid '+color+';border-radius:6px;background:var(--bg);color:var(--text);outline:none;" '
-    +'onblur="cT(\''+p.replace(/'/g,"\\'")+"','"+s.replace(/'/g,"\\'")+'\',this)" '
-    +'onkeydown="if(event.key===\'Enter\'||event.key===\'Escape\')this.blur()" autofocus />';
+  cell.innerHTML='<input type="number" min="0" step="0.01" value="'+(cur!==''?cur:'')+'" placeholder="0" style="width:70px;text-align:center;font-family:DM Mono,monospace;font-size:12px;padding:4px;border:1px solid '+color+';border-radius:6px;background:var(--bg);color:var(--text);outline:none;" onblur="cT(\''+p.replace(/'/g,"\\'")+"','"+s.replace(/'/g,"\\'")+'\',this)" onkeydown="if(event.key===\'Enter\'||event.key===\'Escape\')this.blur()" autofocus />';
   cell.querySelector('input').focus();
 }
 function cT(p,s,inp){st(p,s,inp.value.trim());renderZones();showToast('💾 Tarif mis à jour','success');}
 
+// ══════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════════════
 function renderSettings(){
   document.getElementById('sect-list').innerHTML=secteurs.map(function(s,i){
     return '<div class="item-row"><span class="item-label"><span class="color-dot" style="background:'+s.color+'"></span>'+s.name+'</span>'
-      +'<input type="color" value="'+s.color+'" onchange="updSC('+i+',this.value)" style="width:27px;height:25px;padding:2px;cursor:pointer;border:1px solid var(--border);border-radius:5px;background:var(--surface2);">'
+      +'<input type="color" value="'+s.color+'" onchange="updSC('+i+',this.value)" style="width:26px;height:24px;padding:2px;cursor:pointer;border:1px solid var(--border);border-radius:5px;background:var(--surface2);">'
       +'<button class="btn btn-sm btn-danger" onclick="delSect('+i+')">✕</button></div>';
   }).join('');
   document.getElementById('presta-list').innerHTML=prestations.map(function(p,i){
     var pi=secteurs.map(function(s){
       var v=gt(p,s.name);var col=gsc(s.name);
-      return '<div style="display:flex;flex-direction:column;gap:3px;align-items:center;min-width:64px;">'
-        +'<span style="font-size:9px;font-weight:700;color:'+col+';max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+s.name+'">'+s.name+'</span>'
-        +'<div style="position:relative;"><input type="number" min="0" step="0.01" value="'+(v!==''?v:'')+'" placeholder="—" '
+      return '<div style="display:flex;flex-direction:column;gap:2px;align-items:center;min-width:62px;">'
+        +'<span style="font-size:9px;font-weight:700;color:'+col+';max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+s.name+'">'+s.name+'</span>'
+        +'<div style="position:relative;">'
+        +'<input type="number" min="0" step="0.01" value="'+(v!==''?v:'')+'" placeholder="—" '
         +'data-p="'+p.replace(/"/g,'&quot;')+'" data-s="'+s.name.replace(/"/g,'&quot;')+'" '
         +'onchange="st(this.dataset.p,this.dataset.s,this.value);renderZones();" '
-        +'style="width:62px;text-align:center;font-family:DM Mono,monospace;font-size:11px;padding:4px 4px;border:1px solid '+(v!==''?col:'var(--border)')+';border-radius:6px;background:var(--bg);color:'+(v!==''?col:'var(--text2)')+';" />'
+        +'style="width:60px;text-align:center;font-family:DM Mono,monospace;font-size:11px;padding:4px;border:1px solid '+(v!==''?col:'var(--border)')+';border-radius:6px;background:var(--bg);color:'+(v!==''?col:'var(--text2)')+';" />'
         +'<span style="position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text3);pointer-events:none;">$</span></div></div>';
     }).join('');
     return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
       +'<span style="font-size:13px;font-weight:600;">'+p+'</span>'
       +'<button class="btn btn-sm btn-danger" onclick="delPre('+i+')">✕</button></div>'
-      +(secteurs.length?'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+pi+'</div>':'<p style="font-size:11px;color:var(--text3);">Ajoutez des secteurs d\'abord.</p>')
+      +(secteurs.length?'<div style="display:flex;gap:5px;flex-wrap:wrap;">'+pi+'</div>':'<p style="font-size:11px;color:var(--text3);">Ajoutez des secteurs d\'abord.</p>')
       +'</div>';
   }).join('');
   populateSelects();renderFilterChips();renderLegend();clients.forEach(function(c){refreshMarker(c);});
@@ -655,7 +976,7 @@ function addSecteur(){
   var n=document.getElementById('new-sect-name').value.trim();var col=document.getElementById('new-sect-color').value;
   if(!n){showToast('⚠️ Entrez un nom','error');return;}
   if(secteurs.find(function(s){return s.name.toLowerCase()===n.toLowerCase();})){showToast('Secteur existant','error');return;}
-  secteurs.push({name:n,color:col});document.getElementById('new-sect-name').value='';save();renderSettings();showToast('✅ Secteur "'+n+'" ajouté','success');
+  secteurs.push({name:n,color:col});document.getElementById('new-sect-name').value='';save();renderSettings();showToast('✅ "'+n+'" ajouté','success');
 }
 function delSect(i){
   if(clients.find(function(c){return c.secteur===secteurs[i].name;})){if(!confirm('Des clients sont dans ce secteur. Continuer ?'))return;}
@@ -666,60 +987,86 @@ function addPrestation(){
   var n=document.getElementById('new-presta-name').value.trim();
   if(!n){showToast('⚠️ Entrez un nom','error');return;}
   if(prestations.includes(n)){showToast('Service existant','error');return;}
-  prestations.push(n);document.getElementById('new-presta-name').value='';save();renderSettings();showToast('✅ Service "'+n+'" ajouté','success');
+  prestations.push(n);document.getElementById('new-presta-name').value='';save();renderSettings();showToast('✅ "'+n+'" ajouté','success');
 }
 function delPre(i){
-  if(clients.find(function(c){return c.presta===prestations[i];})){if(!confirm('Des clients ont ce service. Continuer ?'))return;}
+  if(clients.find(function(c){return(c.services||[]).some(function(s){return s.presta===prestations[i];});})){if(!confirm('Des clients ont ce service. Continuer ?'))return;}
   prestations.splice(i,1);save();renderSettings();renderZones();
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// EXCEL EXPORT — services détaillés
+// ══════════════════════════════════════════════════════════════════════
 function exportExcel(){
-  if(!clients.length){showToast('⚠️ Aucun client à exporter','error');return;}
+  if(!clients.length){showToast('⚠️ Aucun client','error');return;}
   var today=new Date().toISOString().split('T')[0];
   var wb=XLSX.utils.book_new();
-  // Feuille Clients
-  var h1=['ID','Nom','Adresse','CP','Ville','Province','Pays','Secteur','Statut','Type piscine','Dimensions','Volume (gal)','Année','Équipements','Services actifs','Nb services','Total $/mois','Prochaine visite','Téléphone','Email','Notes piscine','Notes internes','Nb interventions','CA interventions ($)'];
+
+  // Feuille 1 — Clients
+  var h1=['ID','Nom','Adresse','CP','Ville','Secteur','Statut','Type piscine','Dimensions','Volume (gal)','Année','Équipements','Nb services','Total $/mois','Prochaine visite','Téléphone','Email','Notes piscine','Notes internes','Fait saison '+currentSeason,'Nb interventions','CA interventions ($)'];
   var r1=clients.map(function(c){
-    var svcs=c.services||[];if(!svcs.length&&c.presta)svcs=[{presta:c.presta,freq:c.freq||'',tarif:c.tarif||0,prochaineVisite:c.prochaineVisite||''}];
-    var ni=(c.interventions||[]).length;
-    var ca=(c.interventions||[]).reduce(function(s,i){return s+(i.prix||0);},0);
-    var totalTarif=svcs.reduce(function(s,x){return s+(x.tarif||0);},0);
-    var svcStr=svcs.map(function(s){return s.presta+(s.freq?' ('+s.freq+')':'')+(s.tarif?' — '+s.tarif+'$':'');}).join(' | ');
-    var nextV=clientNextVisit(c);
-    return [c.id,c.nom,c.adresse,c.cp,c.ville,c.province||'',c.country==='QC'?'Canada':'France',c.secteur||'',c.statut||'',c.typePiscine||'',c.dimensions||'',c.volume||'',c.annee||'',c.equipements||'',svcStr,svcs.length,totalTarif,nextV||'',c.tel||'',c.email||'',c.notesPiscine||'',c.notes||'',ni,ca];
+    var svcs=c.services||[];if(!svcs.length&&c.presta)svcs=[{presta:c.presta,freq:c.freq||'',tarif:c.tarif||0}];
+    var ni=(c.interventions||[]).filter(function(i){return i.type!=='__season__';}).length;
+    var ca=(c.interventions||[]).filter(function(i){return i.type!=='__season__';}).reduce(function(s,i){return s+(i.prix||0);},0);
+    var done=clientSeasonDone(c,currentSeason)?'Oui':'Non';
+    return [c.id,c.nom,c.adresse,c.cp,c.ville,c.secteur||'',c.statut||'',c.typePiscine||'',c.dimensions||'',c.volume||'',c.annee||'',c.equipements||'',svcs.length,clientTotalTarif(c),clientNextVisit(c)||'',c.tel||'',c.email||'',c.notesPiscine||'',c.notes||'',done,ni,ca];
   });
   var ws1=XLSX.utils.aoa_to_sheet([h1].concat(r1));
-  ws1['!cols']=[8,22,30,9,16,8,8,12,12,18,10,11,8,30,22,14,10,14,16,24,30,28,8,12].map(function(w){return{wch:w};});
+  ws1['!cols']=[8,22,28,9,16,12,12,18,10,10,8,28,9,10,14,16,24,28,26,12,8,12].map(function(w){return{wch:w};});
   XLSX.utils.book_append_sheet(wb,ws1,'Clients');
-  // Feuille Interventions
-  var h2=['Client','Adresse','Secteur','Date','Service','Technicien','Prix ($)','Notes','Prochaine visite'];
+
+  // Feuille 2 — Détail services par client
+  var h2=['Client','Adresse','Secteur','Service','Fréquence','Tarif ($)','Prochaine visite'];
   var r2=[];
-  clients.forEach(function(c){(c.interventions||[]).forEach(function(i){r2.push([c.nom,c.adresse+', '+c.cp+' '+c.ville,c.secteur||'',i.date,i.type,i.tech||'',i.prix||0,i.notes||'',i.prochaine||'']);});});
-  if(!r2.length)r2=[['Aucune intervention','','','','','','','','']];
+  clients.forEach(function(c){
+    var svcs=c.services||[];if(!svcs.length&&c.presta)svcs=[{presta:c.presta,freq:c.freq||'',tarif:c.tarif||0,prochaineVisite:c.prochaineVisite||''}];
+    svcs.forEach(function(s){r2.push([c.nom,c.adresse+', '+c.cp+' '+c.ville,c.secteur||'',s.presta,s.freq||'',s.tarif||0,s.prochaineVisite||'']);});
+  });
+  if(!r2.length)r2=[['Aucun service','','','','','','']];
   var ws2=XLSX.utils.aoa_to_sheet([h2].concat(r2));
-  ws2['!cols']=[22,35,12,12,22,18,10,40,14].map(function(w){return{wch:w};});
-  XLSX.utils.book_append_sheet(wb,ws2,'Interventions');
-  // Feuille Grille tarifaire
-  var sn=secteurs.map(function(s){return s.name;});
-  var h3=['Service'].concat(sn);
-  var r3=prestations.map(function(p){return [p].concat(sn.map(function(s){var v=gt(p,s);return v!==''?v:'';}));});
+  ws2['!cols']=[22,35,12,22,14,10,14].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,ws2,'Services par client');
+
+  // Feuille 3 — Interventions
+  var h3=['Client','Adresse','Secteur','Date','Service','Technicien','Prix ($)','Notes','Prochaine visite'];
+  var r3=[];
+  clients.forEach(function(c){(c.interventions||[]).filter(function(i){return i.type!=='__season__';}).forEach(function(i){r3.push([c.nom,c.adresse+', '+c.cp+' '+c.ville,c.secteur||'',i.date,i.type,i.tech||'',i.prix||0,i.notes||'',i.prochaine||'']);});});
+  if(!r3.length)r3=[['Aucune intervention','','','','','','','','']];
   var ws3=XLSX.utils.aoa_to_sheet([h3].concat(r3));
-  ws3['!cols']=[{wch:25}].concat(sn.map(function(){return{wch:13};}));
-  XLSX.utils.book_append_sheet(wb,ws3,'Grille tarifaire');
+  ws3['!cols']=[22,34,12,12,22,18,10,38,14].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,ws3,'Interventions');
+
+  // Feuille 4 — Suivi saison
+  var h4=['Client','Secteur','Type piscine','Services','Total $/mois','Fait en '+currentSeason,'Nb interventions '+currentSeason];
+  var r4=clients.map(function(c){
+    var svcs=c.services||[];
+    var ni=(c.interventions||[]).filter(function(i){return i.type!=='__season__'&&i.date&&i.date.startsWith(String(currentSeason));}).length;
+    return [c.nom,c.secteur||'',c.typePiscine||'',svcs.map(function(s){return s.presta;}).join(', '),clientTotalTarif(c),clientSeasonDone(c,currentSeason)?'✅ Oui':'⏳ Non',ni];
+  });
+  var ws4=XLSX.utils.aoa_to_sheet([h4].concat(r4));
+  ws4['!cols']=[22,12,18,40,10,12,10].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,ws4,'Suivi saison '+currentSeason);
+
+  // Feuille 5 — Grille tarifaire
+  var sn=secteurs.map(function(s){return s.name;});
+  var ws5=XLSX.utils.aoa_to_sheet([['Service'].concat(sn)].concat(prestations.map(function(p){return[p].concat(sn.map(function(s){var v=gt(p,s);return v!==''?v:'';}));})));
+  ws5['!cols']=[{wch:25}].concat(sn.map(function(){return{wch:13};}));
+  XLSX.utils.book_append_sheet(wb,ws5,'Grille tarifaire');
+
   XLSX.writeFile(wb,'PoolPro_'+today+'.xlsx');
-  showToast('📥 Export Excel téléchargé !','success');
+  showToast('📥 Excel exporté (5 onglets) !','success');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════
 function populateSelects(){
-  var sf=document.getElementById('f-secteur');
-  var pf=document.getElementById('f-new-presta');
-  sf.innerHTML='<option value="">— Choisir —</option>'+secteurs.map(function(s){return'<option value="'+s.name+'">'+s.name+'</option>';}).join('');
-  pf.innerHTML='<option value="">— Choisir —</option>'+prestations.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  document.getElementById('f-secteur').innerHTML='<option value="">— Choisir —</option>'+secteurs.map(function(s){return'<option value="'+s.name+'">'+s.name+'</option>';}).join('');
+  document.getElementById('f-new-presta').innerHTML='<option value="">— Choisir —</option>'+prestations.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  document.getElementById('fil-secteur').innerHTML='<option value="">Tous secteurs</option>'+secteurs.map(function(s){return'<option value="'+s.name+'">'+s.name+'</option>';}).join('');
+  document.getElementById('fil-presta').innerHTML='<option value="">Tous services</option>'+prestations.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
 }
-function renderFilterChips(){
-  document.getElementById('filter-row').innerHTML='<div class="filter-chip '+(activeFilter?'':'active')+'" onclick="setFilter(this,\'\')">Tous</div>'
-    +secteurs.map(function(s){return'<div class="filter-chip '+(activeFilter===s.name?'active':'')+'" onclick="setFilter(this,\''+s.name+'\')">'+s.name+'</div>';}).join('');
-}
+function renderFilterChips(){populateSelects();}
 function renderLegend(){
   document.getElementById('legend-items').innerHTML=secteurs.map(function(s){
     return'<div class="legend-item"><div class="legend-dot" style="background:'+s.color+'"></div>'+s.name+'</div>';
@@ -728,13 +1075,9 @@ function renderLegend(){
 function updateStats(){
   document.getElementById('stat-total').textContent=clients.length;
   var ca=clients.reduce(function(s,c){return s+clientTotalTarif(c);},0);
-  document.getElementById('stat-ca').textContent=ca.toFixed(0)+' $';
+  document.getElementById('stat-ca').textContent=ca.toFixed(0)+'$';
   var today=new Date();today.setHours(0,0,0,0);
-  var nv=function(c){return clientNextVisit(c);};
-  var u=clients.filter(function(c){
-    var v=nv(c);
-    return c.statut==='Problème'||(v&&new Date(v+'T00:00:00')<today);
-  }).length;
+  var u=clients.filter(function(c){var v=clientNextVisit(c);return c.statut==='Problème'||(v&&new Date(v+'T00:00:00')<today);}).length;
   document.getElementById('stat-urgent').textContent=u;
 }
 function renderAll(){renderList();renderZones();updateStats();}
@@ -751,30 +1094,40 @@ function switchTab(tab){
   document.getElementById('tab-'+tab).classList.add('active');
   if(tab==='settings')renderSettings();if(tab==='zones')renderZones();
 }
-function setFilter(el,val){
-  activeFilter=val;document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});el.classList.add('active');renderList();
-}
 function showToast(msg,type){
-  var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'success')+' show';setTimeout(function(){t.classList.remove('show');},3000);
+  var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'success')+' show';
+  setTimeout(function(){t.classList.remove('show');},3000);
 }
 function resetAll(){
   if(!confirm('Supprimer TOUTES les données ? Irréversible.'))return;
-  clients=[];Object.keys(markers).forEach(function(id){map.removeLayer(markers[id]);});markers={};save();renderAll();showToast('🗑 Réinitialisé','error');
+  clients=[];Object.keys(markers).forEach(function(id){map.removeLayer(markers[id]);});markers={};
+  save();renderAll();showToast('🗑 Réinitialisé','error');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════
 function init(){
   if(!clients.length){
+    var yr=new Date().getFullYear();
     clients=[
-      {id:'1',nom:'Martin Tremblay',adresse:'1250 Boul. René-Lévesque O',cp:'H3B 4W8',ville:'Montréal',country:'QC',province:'QC',secteur:'Centre',statut:'Ouverte',typePiscine:'Creusée — Vinyle',volume:'18000',dimensions:'16x32',annee:'2019',equipements:'Pompe Hayward, Filtre sable, Chauffage gaz',notesPiscine:'pH à surveiller régulièrement',services:[{presta:'Entretien régulier',freq:'Hebdomadaire',tarif:180,prochaineVisite:new Date(Date.now()+3*86400000).toISOString().split('T')[0]},{presta:'Ouverture saisonnière',freq:'Saisonnier',tarif:250,prochaineVisite:''}],tel:'514 111-2222',email:'martin.t@mail.com',notes:'Code portail : 1234',interventions:[{id:'a1',date:'2024-06-01',type:'Ouverture saisonnière',tech:'Jean',prix:250,notes:'Eau trouble au départ, chimie ajustée',prochaine:'2024-06-08'}],lat:45.4991,lng:-73.5679},
-      {id:'2',nom:'Julie Bouchard',adresse:'745 Rue Saint-Jean',cp:'G1R 1P4',ville:'Québec',country:'QC',province:'QC',secteur:'Nord',statut:'En attente',typePiscine:'Hors-sol',volume:'8000',dimensions:'12x24',annee:'2021',equipements:'Pompe Intex, Filtre cartouche',notesPiscine:'',services:[{presta:'Entretien régulier',freq:'Aux 2 semaines',tarif:95,prochaineVisite:new Date(Date.now()-2*86400000).toISOString().split('T')[0]}],tel:'418 222-3333',email:'julie.b@gmail.com',notes:'Chien dans la cour',interventions:[],lat:46.8139,lng:-71.2082},
-      {id:'3',nom:'Luc Gagnon',adresse:'3500 Rue de la Montagne',cp:'H3G 2A8',ville:'Montréal',country:'QC',province:'QC',secteur:'Sud',statut:'Problème',typePiscine:'Creusée — Béton',volume:'25000',dimensions:'18x36',annee:'2010',equipements:'Pompe Pentair, Filtre sable, Éclairage LED, Spa intégré',notesPiscine:'Fissure mineure côté nord à surveiller',services:[{presta:'Réparations & dépannage',freq:'Sur appel',tarif:0,prochaineVisite:new Date(Date.now()+1*86400000).toISOString().split('T')[0]},{presta:'Entretien régulier',freq:'Mensuel',tarif:120,prochaineVisite:''}],tel:'514 333-4444',email:'luc.g@mail.com',notes:'Appeler avant de venir',interventions:[{id:'b1',date:'2024-05-15',type:'Réparations & dépannage',tech:'Marie',prix:320,notes:'Remplacement joint pompe',prochaine:''}],lat:45.4926,lng:-73.5806},
+      {id:'1',nom:'Martin Tremblay',adresse:'1250 Boul. René-Lévesque O',cp:'H3B 4W8',ville:'Montréal',secteur:'Centre',statut:'Ouverte',typePiscine:'Creusée — Vinyle',volume:'18000',dimensions:'16x32',annee:'2019',equipements:'Pompe Hayward, Filtre sable, Chauffage gaz',notesPiscine:'pH à surveiller',services:[{presta:'Entretien régulier',freq:'Hebdomadaire',tarif:180,prochaineVisite:new Date(Date.now()+3*86400000).toISOString().split('T')[0]},{presta:'Ouverture saisonnière',freq:'Saisonnier',tarif:250,prochaineVisite:''}],tel:'514 111-2222',email:'martin.t@mail.com',notes:'Code portail : 1234',interventions:[{id:'a1',date:yr+'-06-01',type:'Ouverture saisonnière',tech:'Jean',prix:250,notes:'Ouverture complète',prochaine:yr+'-06-08'}],lat:45.4991,lng:-73.5679},
+      {id:'2',nom:'Julie Bouchard',adresse:'745 Rue Saint-Jean',cp:'G1R 1P4',ville:'Québec',secteur:'Nord',statut:'En attente',typePiscine:'Hors-sol',volume:'8000',dimensions:'12x24',annee:'2021',equipements:'Pompe Intex',notesPiscine:'',services:[{presta:'Entretien régulier',freq:'Aux 2 semaines',tarif:95,prochaineVisite:new Date(Date.now()-2*86400000).toISOString().split('T')[0]}],tel:'418 222-3333',email:'julie.b@gmail.com',notes:'Chien',interventions:[],lat:46.8139,lng:-71.2082},
+      {id:'3',nom:'Luc Gagnon',adresse:'3500 Rue de la Montagne',cp:'H3G 2A8',ville:'Montréal',secteur:'Sud',statut:'Problème',typePiscine:'Creusée — Béton',volume:'25000',dimensions:'18x36',annee:'2010',equipements:'Pompe Pentair, Filtre sable, Spa',notesPiscine:'Fissure côté nord',services:[{presta:'Réparations & dépannage',freq:'Sur appel',tarif:0,prochaineVisite:new Date(Date.now()+1*86400000).toISOString().split('T')[0]},{presta:'Entretien régulier',freq:'Mensuel',tarif:120,prochaineVisite:''}],tel:'514 333-4444',email:'luc.g@mail.com',notes:'Appeler avant',interventions:[{id:'b1',date:(yr-1)+'-09-15',type:'Fermeture saisonnière',tech:'Marie',prix:220,notes:'Fermeture hiver',prochaine:''},{id:'b2',date:yr+'-05-20',type:'Réparations & dépannage',tech:'Jean',prix:320,notes:'Joint pompe',prochaine:''}],lat:45.4926,lng:-73.5806},
     ];
     save();
   }
-  setCountry('QC',document.querySelectorAll('.ctry-btn')[1]);
-  populateSelects();renderFilterChips();renderLegend();
+  document.getElementById('cur-season-label').textContent=currentSeason;
+  populateSelects();renderLegend();
   clients.forEach(function(c){addMarker(c);});
-  renderList();renderZones();updateStats();
+  renderList();renderZones();updateStats();renderFormServices();
+
+  // Restore sync
+  if(syncCode){
+    document.getElementById('sync-code-input').value=syncCode;
+    setSyncStatus('loading','Reconnexion…');
+    pullSync();startSyncLoop();
+  }
 }
 init();
 </script>
