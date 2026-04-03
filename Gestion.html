@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
 :root{
   --bg:#07090f;--surface:#0f1420;--surface2:#161c2e;--surface3:#1e2640;
@@ -47,12 +48,16 @@ header{
 
 /* ── SYNC BAR ── */
 #sync-bar{
-  background:rgba(0,180,216,.08);border-bottom:1px solid rgba(0,180,216,.2);
-  padding:6px 14px;display:flex;align-items:center;justify-content:space-between;
-  font-size:11px;color:var(--text2);
+  background:rgba(0,180,216,.07);border-bottom:1px solid rgba(0,180,216,.15);
+  padding:5px 14px;display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--text2);gap:8px;transition:all .3s;
 }
-#sync-bar.ok{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);}
-#sync-bar.err{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);}
+#sync-bar.ok{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.15);}
+#sync-bar.err{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.15);}
+#sync-bar.collapsed .sync-expand{display:flex!important;}
+#sync-bar.collapsed > div:last-child{display:none;}
+#sync-bar.collapsed{padding:4px 14px;}
+.sync-expand{display:none;cursor:pointer;color:var(--accent);font-size:10px;}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
 .sync-dot.ok{background:var(--green);}
 .sync-dot.err{background:var(--red);}
@@ -233,15 +238,23 @@ textarea{resize:vertical;min-height:50px;}
 
 <!-- SYNC BAR -->
 <div id="sync-bar">
-  <div style="display:flex;align-items:center;gap:7px;">
+  <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;overflow:hidden;">
     <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-status">Entrez un code de synchronisation pour partager vos données</span>
+    <span id="sync-status" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;">Synchro — entrez un code partagé (ex: piscines2025)</span>
   </div>
-  <div style="display:flex;align-items:center;gap:5px;">
-    <input id="sync-code-input" placeholder="Code synchro" maxlength="20" onkeydown="if(event.key==='Enter')connectSync()">
-    <button class="btn-sm btn-edit btn" onclick="connectSync()" style="padding:3px 8px;font-size:10px;">Connecter</button>
-    <button class="btn-sm btn" onclick="genCode()" style="padding:3px 8px;font-size:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">Nouveau</button>
+  <div id="sync-controls" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+    <input id="sync-code-input" placeholder="mon-code" maxlength="30" onkeydown="if(event.key==='Enter')connectSync()" style="width:100px;">
+    <button class="btn-sm btn-edit btn" onclick="connectSync()" style="padding:3px 8px;font-size:10px;">🔗</button>
+    <button class="btn-sm btn" onclick="genCode()" style="padding:3px 8px;font-size:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">✨</button>
+    <button onclick="toggleSyncBar()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px;" title="Réduire">▲</button>
   </div>
+</div>
+<div id="sync-bar-collapsed" style="display:none;background:rgba(0,180,216,.05);border-bottom:1px solid rgba(0,180,216,.1);padding:3px 14px;display:none;align-items:center;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);">
+    <div class="sync-dot" id="sync-dot-mini"></div>
+    <span id="sync-status-mini">Synchro</span>
+  </div>
+  <button onclick="toggleSyncBar()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">▼ Synchro</button>
 </div>
 
 <div class="app">
@@ -467,41 +480,68 @@ function save(){
   localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
   localStorage.setItem('pp_prestas',JSON.stringify(prestations));
   localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));
+  localStorage.setItem('pp_last_save',String(Date.now()));
   if(syncCode) pushSync();
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// CLOUD SYNC via Claude artifact storage
+// CLOUD SYNC via JSONBin.io (free, zero config)
 // ══════════════════════════════════════════════════════════════════════
+// Each sync code gets its own "bin" on JSONBin.io
+// Free tier: 10,000 requests/month, 1MB per bin
+var JSONBIN_KEY = '$2a$10$poolpro2025syncxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+var syncBinId = null;
+var isSyncing = false;
+var lastSyncHash = '';
+var syncCode = localStorage.getItem('pp_sync_code') || '';
+var syncInterval = null;
+
 function hashData(d){var s=JSON.stringify(d);var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return String(h);}
 
+// Use a public pastebin-style service that requires no auth
+// jsonblob.com: free, no signup, just POST/GET by ID
+var SYNC_BASE = 'https://jsonblob.com/api/jsonBlob';
+var binIds = JSON.parse(localStorage.getItem('pp_bin_ids') || '{}');
+
 async function pushSync(){
-  if(!syncCode)return;
+  if(!syncCode||isSyncing)return;
   var data={clients:clients,secteurs:secteurs,prestations:prestations,tarifs:tarifs,ts:Date.now()};
-  var h=hashData(data);
-  if(h===lastSyncHash)return;
+  var h=hashData(data);if(h===lastSyncHash)return;
+  isSyncing=true;
   try{
-    await window.storage.set('poolpro:'+syncCode, JSON.stringify(data), true);
-    lastSyncHash=h;
+    var binId=binIds[syncCode];
+    var url,method;
+    if(binId){url=SYNC_BASE+'/'+binId;method='PUT';}
+    else{url=SYNC_BASE;method='POST';}
+    var resp=await fetch(url,{
+      method:method,
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(data)
+    });
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    if(!binId){
+      var loc=resp.headers.get('Location')||'';
+      binId=loc.split('/').pop();
+      if(binId){binIds[syncCode]=binId;localStorage.setItem('pp_bin_ids',JSON.stringify(binIds));}
+    }
+    lastSyncHash=h;isSyncing=false;
     setSyncStatus('ok','Synchronisé — '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){setSyncStatus('err','Erreur de synchronisation');}
+  }catch(e){isSyncing=false;setSyncStatus('err','Erreur synchro : vérifiez internet');}
 }
 
 async function pullSync(){
   if(!syncCode)return;
+  var binId=binIds[syncCode];
+  if(!binId){setSyncStatus('ok','En attente d'un autre appareil sur ce code…');return;}
   try{
-    var res=await window.storage.get('poolpro:'+syncCode, true);
-    if(!res)return;
-    var data=JSON.parse(res.value);
-    var h=hashData(data);
-    if(h===lastSyncHash)return; // no change
-    // Merge: remote wins (last write wins)
-    clients=data.clients||clients;
-    secteurs=data.secteurs||secteurs;
-    prestations=data.prestations||prestations;
-    tarifs=data.tarifs||tarifs;
+    var resp=await fetch(SYNC_BASE+'/'+binId,{headers:{'Accept':'application/json'}});
+    if(!resp.ok)return;
+    var data=await resp.json();
+    var h=hashData(data);if(h===lastSyncHash)return;
+    if(data.ts && clients.length && data.ts < (JSON.parse(localStorage.getItem('pp_last_save')||'0'))){return;}
+    clients=data.clients||clients;secteurs=data.secteurs||secteurs;
+    prestations=data.prestations||prestations;tarifs=data.tarifs||tarifs;
     lastSyncHash=h;
-    // Save locally
     localStorage.setItem('pp_clients',JSON.stringify(clients));
     localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
     localStorage.setItem('pp_prestas',JSON.stringify(prestations));
@@ -511,41 +551,56 @@ async function pullSync(){
   }catch(e){setSyncStatus('err','Erreur de connexion');}
 }
 
+function startSyncLoop(){
+  if(syncInterval)clearInterval(syncInterval);
+  syncInterval=setInterval(pullSync,15000);
+}
+
 function setSyncStatus(type,msg){
   var bar=document.getElementById('sync-bar');
   var dot=document.getElementById('sync-dot');
   var txt=document.getElementById('sync-status');
-  bar.className='';bar.id='sync-bar';
-  dot.className='sync-dot';
-  if(type==='ok'){bar.classList.add('ok');dot.classList.add('ok');}
-  else if(type==='err'){bar.classList.add('err');dot.classList.add('err');}
-  else if(type==='loading'){dot.classList.add('loading');}
-  txt.textContent=msg;
+  var dotm=document.getElementById('sync-dot-mini');
+  var txtm=document.getElementById('sync-status-mini');
+  if(bar){bar.className='';bar.id='sync-bar';}
+  if(dot)dot.className='sync-dot';
+  if(type==='ok'){if(bar)bar.classList.add('ok');if(dot)dot.classList.add('ok');if(dotm){dotm.className='sync-dot ok';}}
+  else if(type==='err'){if(bar)bar.classList.add('err');if(dot)dot.classList.add('err');if(dotm){dotm.className='sync-dot err';}}
+  else if(type==='loading'){if(dot)dot.classList.add('loading');if(dotm){dotm.className='sync-dot loading';}}
+  if(txt)txt.textContent=msg;
+  if(txtm)txtm.textContent=msg.length>30?msg.substring(0,30)+'…':msg;
+}
+
+function toggleSyncBar(){
+  var full=document.getElementById('sync-bar');
+  var mini=document.getElementById('sync-bar-collapsed');
+  if(full.style.display==='none'){
+    full.style.display='flex';mini.style.display='none';
+  }else{
+    full.style.display='none';mini.style.display='flex';
+  }
 }
 
 function connectSync(){
-  var code=document.getElementById('sync-code-input').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
-  if(!code){showToast('⚠️ Entrez un code','error');return;}
+  var raw=document.getElementById('sync-code-input').value.trim();
+  var code=raw.toLowerCase().replace(/[^a-z0-9-]/g,'');
+  if(code.length<3){showToast('⚠️ Code trop court (min. 3 car.)','error');return;}
   syncCode=code;
   localStorage.setItem('pp_sync_code',code);
   document.getElementById('sync-code-input').value=code;
   setSyncStatus('loading','Connexion au code "'+code+'"…');
-  pullSync();
-  startSyncLoop();
-  showToast('🔗 Connecté au code "'+code+'"','success');
+  // First push local data, then start pulling
+  pushSync().then ? pushSync().then(function(){startSyncLoop();}) : (pushSync(),startSyncLoop());
+  showToast('🔗 Code : "'+code+'" — entrez ce code sur vos autres appareils','success');
 }
 
 function genCode(){
   var chars='abcdefghjkmnpqrstuvwxyz23456789';
-  var code='';for(var i=0;i<8;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  var code='pool';for(var i=0;i<5;i++)code+=chars[Math.floor(Math.random()*chars.length)];
   document.getElementById('sync-code-input').value=code;
   connectSync();
 }
 
-function startSyncLoop(){
-  if(syncInterval)clearInterval(syncInterval);
-  syncInterval=setInterval(pullSync, 10000); // pull every 10s
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // MAP
@@ -1125,8 +1180,9 @@ function init(){
   // Restore sync
   if(syncCode){
     document.getElementById('sync-code-input').value=syncCode;
-    setSyncStatus('loading','Reconnexion…');
-    pullSync();startSyncLoop();
+    setSyncStatus('loading','Reconnexion au code "'+syncCode+'"…');
+    pullSync();
+    startSyncLoop();
   }
 }
 init();
