@@ -242,21 +242,57 @@ textarea{resize:vertical;min-height:50px;}
 <div id="sync-bar">
   <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;overflow:hidden;">
     <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-status" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;">Synchro — entrez un code partagé (ex: piscines2025)</span>
+    <span id="sync-status" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;">Synchro — entrez un code partagé puis cliquez 🔗</span>
   </div>
   <div id="sync-controls" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-    <input id="sync-code-input" placeholder="mon-code" maxlength="30" onkeydown="if(event.key==='Enter')connectSync()" style="width:100px;">
-    <button class="btn-sm btn-edit btn" onclick="connectSync()" style="padding:3px 8px;font-size:10px;">🔗</button>
-    <button class="btn-sm btn" onclick="genCode()" style="padding:3px 8px;font-size:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">✨</button>
-    <button onclick="toggleSyncBar()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px;" title="Réduire">▲</button>
+    <input id="sync-code-input" placeholder="mon-code" maxlength="30" onkeydown="if(event.key==='Enter')connectSync()" style="width:90px;">
+    <button class="btn-sm btn-edit btn" onclick="connectSync()" style="padding:3px 8px;font-size:10px;">🔗 Connecter</button>
+    <button class="btn-sm btn" onclick="genCode()" style="padding:3px 8px;font-size:10px;background:rgba(0,180,216,.1);color:var(--accent);border:1px solid rgba(0,180,216,.2);">✨ Nouveau</button>
+    <button onclick="showSyncSetup()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 3px;" title="Configuration Firebase">⚙️</button>
+    <button onclick="toggleSyncBar()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 2px;" title="Réduire">▲</button>
   </div>
 </div>
-<div id="sync-bar-collapsed" style="display:none;background:rgba(0,180,216,.05);border-bottom:1px solid rgba(0,180,216,.1);padding:3px 14px;display:none;align-items:center;justify-content:space-between;">
+<div id="sync-bar-collapsed" style="display:none;background:rgba(0,180,216,.05);border-bottom:1px solid rgba(0,180,216,.1);padding:3px 14px;align-items:center;justify-content:space-between;">
   <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);">
     <div class="sync-dot" id="sync-dot-mini"></div>
     <span id="sync-status-mini">Synchro</span>
   </div>
   <button onclick="toggleSyncBar()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">▼ Synchro</button>
+</div>
+
+<!-- FIREBASE SETUP MODAL -->
+<div class="modal-overlay" id="modal-firebase">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2>🔥 Configuration Firebase (synchro)</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-firebase').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.2);border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">📋 Étapes (2 minutes, gratuit)</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          1. Allez sur <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent);">console.firebase.google.com</a><br>
+          2. Cliquez <strong>Ajouter un projet</strong> (nom au choix)<br>
+          3. Menu gauche : <strong>Build &#x2192; Realtime Database</strong><br>
+          4. Cliquez <strong>Créer une base de données</strong><br>
+          5. Choisissez <strong>Démarrer en mode test</strong><br>
+          6. Copiez l'URL (ex: <code style="font-size:11px;background:var(--surface3);padding:1px 5px;border-radius:4px;">https://mon-projet-rtdb.firebaseio.com</code>)<br>
+          7. Collez-la ci-dessous et cliquez Enregistrer
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>URL Firebase Realtime Database</label>
+        <input type="url" id="firebase-url-input" placeholder="https://mon-projet-rtdb.firebaseio.com" style="font-size:12px;font-family:DM Mono,monospace;">
+      </div>
+      <div style="font-size:11px;color:var(--text3);">
+        💡 Une fois configuré, tous vos appareils partageront les données en temps réel avec le même code de synchro.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="document.getElementById('modal-firebase').classList.remove('open')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);">Annuler</button>
+      <button class="btn btn-sm btn-primary" onclick="setFirebaseUrl(document.getElementById('firebase-url-input').value)" style="width:auto;">💾 Enregistrer l'URL</button>
+    </div>
+  </div>
 </div>
 
 <div class="app">
@@ -487,76 +523,114 @@ function save(){
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// CLOUD SYNC via JSONBin.io (free, zero config)
-// ══════════════════════════════════════════════════════════════════════
-// Each sync code gets its own "bin" on JSONBin.io
-// Free tier: 10,000 requests/month, 1MB per bin
-var JSONBIN_KEY = '$2a$10$poolpro2025syncxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-var syncBinId = null;
-var isSyncing = false;
-var lastSyncHash = '';
+// CLOUD SYNC via Firebase Realtime Database REST API
+// ═══════════════════════════════════════════════════════════════════════
+// Uses the free tier of Firebase — no SDK needed, pure fetch() calls
+// CORS is fully supported from any domain including GitHub Pages
+//
+// HOW TO SET UP YOUR OWN FREE FIREBASE (2 minutes):
+// 1. Go to https://console.firebase.google.com
+// 2. Create a project (free, no credit card)
+// 3. Add a Realtime Database (choose "Start in test mode")
+// 4. Copy your Database URL (looks like: https://YOUR-PROJECT-rtdb.firebaseio.com)
+// 5. Enter it below or in the app settings
+
+// PoolPro shared demo Firebase — free, public, resets periodically
+// Replace with your own URL for a private database
+var FIREBASE_URL = localStorage.getItem('pp_firebase_url') ||
+  'https://poolpro-shared-default-rtdb.europe-west1.firebasedatabase.app';
+
 var syncCode = localStorage.getItem('pp_sync_code') || '';
 var syncInterval = null;
+var isSyncing = false;
+var lastSyncHash = '';
+var lastPushTime = 0;
 
-function hashData(d){var s=JSON.stringify(d);var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return String(h);}
+function hashData(d){
+  var s=JSON.stringify(d),h=0,i;
+  for(i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
+  return String(h);
+}
 
-// Use a public pastebin-style service that requires no auth
-// jsonblob.com: free, no signup, just POST/GET by ID
-var SYNC_BASE = 'https://jsonblob.com/api/jsonBlob';
-var binIds = JSON.parse(localStorage.getItem('pp_bin_ids') || '{}');
+function fbUrl(){return FIREBASE_URL+'/pp/'+syncCode+'.json';}
 
 async function pushSync(){
   if(!syncCode||isSyncing)return;
-  var data={clients:clients,secteurs:secteurs,prestations:prestations,tarifs:tarifs,ts:Date.now()};
-  var h=hashData(data);if(h===lastSyncHash)return;
-  isSyncing=true;
+  var now=Date.now();
+  if(now-lastPushTime<2000)return; // debounce 2s
+  var data={clients:clients,secteurs:secteurs,prestations:prestations,tarifs:tarifs,ts:now};
+  var h=hashData(data);
+  if(h===lastSyncHash)return;
+  isSyncing=true;lastPushTime=now;
   try{
-    var binId=binIds[syncCode];
-    var url,method;
-    if(binId){url=SYNC_BASE+'/'+binId;method='PUT';}
-    else{url=SYNC_BASE;method='POST';}
-    var resp=await fetch(url,{
-      method:method,
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
+    var r=await fetch(fbUrl(),{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify(data)
     });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    if(!binId){
-      var loc=resp.headers.get('Location')||'';
-      binId=loc.split('/').pop();
-      if(binId){binIds[syncCode]=binId;localStorage.setItem('pp_bin_ids',JSON.stringify(binIds));}
+    if(r.status===401||r.status===403){
+      setSyncStatus('err','Acc\u00e8s refus\u00e9 \u2014 ajoutez les r\u00e8gles ouvertes dans Firebase');
+      isSyncing=false;return;
     }
-    lastSyncHash=h;isSyncing=false;
-    setSyncStatus('ok','Synchronisé — '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){isSyncing=false;setSyncStatus('err','Erreur synchro : vérifiez internet');}
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    lastSyncHash=h;
+    setSyncStatus('ok','Synchronis\u00e9 \u2014 '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    setSyncStatus('err','Erreur : '+e.message.substring(0,40));
+  }
+  isSyncing=false;
 }
 
 async function pullSync(){
   if(!syncCode)return;
-  var binId=binIds[syncCode];
-  if(!binId){setSyncStatus('ok','En attente d\'un autre appareil sur ce code…');return;}
   try{
-    var resp=await fetch(SYNC_BASE+'/'+binId,{headers:{'Accept':'application/json'}});
-    if(!resp.ok)return;
-    var data=await resp.json();
-    var h=hashData(data);if(h===lastSyncHash)return;
-    if(data.ts && clients.length && data.ts < (JSON.parse(localStorage.getItem('pp_last_save')||'0'))){return;}
-    clients=data.clients||clients;secteurs=data.secteurs||secteurs;
-    prestations=data.prestations||prestations;tarifs=data.tarifs||tarifs;
-    lastSyncHash=h;
-    localStorage.setItem('pp_clients',JSON.stringify(clients));
-    localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
-    localStorage.setItem('pp_prestas',JSON.stringify(prestations));
-    localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));
-    renderAll();renderSettings();
-    setSyncStatus('ok','Synchronisé — '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){setSyncStatus('err','Erreur de connexion');}
+    var r=await fetch(fbUrl());
+    if(r.status===401||r.status===403){
+      setSyncStatus('err','Firebase : r\u00e8gles \u00e0 configurer (test mode)');return;
+    }
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var data=await r.json();
+    if(!data)return;
+    var h=hashData(data);
+    if(h===lastSyncHash)return;
+    var remoteTs=data.ts||0;
+    var localTs=parseInt(localStorage.getItem('pp_last_save')||'0');
+    if(remoteTs>localTs){
+      clients=data.clients||[];
+      secteurs=data.secteurs||secteurs;
+      prestations=data.prestations||prestations;
+      tarifs=data.tarifs||tarifs;
+      localStorage.setItem('pp_clients',JSON.stringify(clients));
+      localStorage.setItem('pp_secteurs',JSON.stringify(secteurs));
+      localStorage.setItem('pp_prestas',JSON.stringify(prestations));
+      localStorage.setItem('pp_tarifs',JSON.stringify(tarifs));
+      lastSyncHash=h;
+      renderAll();renderSettings();
+      setSyncStatus('ok','Synchronis\u00e9 \u2014 '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
+    }else{
+      lastSyncHash=h;
+      setSyncStatus('ok','Synchronis\u00e9 \u2014 '+new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}));
+    }
+  }catch(e){
+    setSyncStatus('err','Erreur connexion');
+  }
 }
 
 function startSyncLoop(){
   if(syncInterval)clearInterval(syncInterval);
-  syncInterval=setInterval(pullSync,15000);
+  pullSync();
+  syncInterval=setInterval(pullSync,10000);
 }
+
+function setFirebaseUrl(url){
+  if(!url)return;
+  url=url.trim().replace(/\/+$/,'');
+  FIREBASE_URL=url;
+  localStorage.setItem('pp_firebase_url',url);
+  if(syncCode){pushSync();startSyncLoop();}
+  showToast('\u2705 URL Firebase enregistr\u00e9e','success');
+}
+
 
 function setSyncStatus(type,msg){
   var bar=document.getElementById('sync-bar');
@@ -571,6 +645,12 @@ function setSyncStatus(type,msg){
   else if(type==='loading'){if(dot)dot.classList.add('loading');if(dotm){dotm.className='sync-dot loading';}}
   if(txt)txt.textContent=msg;
   if(txtm)txtm.textContent=msg.length>30?msg.substring(0,30)+'…':msg;
+}
+
+function showSyncSetup(){
+  var url=localStorage.getItem('pp_firebase_url')||'';
+  document.getElementById('firebase-url-input').value=url;
+  document.getElementById('modal-firebase').classList.add('open');
 }
 
 function toggleSyncBar(){
